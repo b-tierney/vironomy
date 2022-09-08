@@ -64,8 +64,23 @@ To just run phylogenetic analysis on an existing classified dataset:
 ```
 vironomy phylogeny -c /path/to/classify/output/directory -d /path/to/databases 
 ```
+## Command line options (end_to_end mode)
 
-## Parameters
+                                                     | Required? |
+|-----------------------|----|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---|
+|  --inputs  |  -i  | File containing your query genomes. | Yes |
+|  --dbdir  |  -d  | Path to directory containing databases. | Yes |
+|  --outputdir  |  -o  | Path to classification output directory [Default = vironomy_output] | No |
+|  --hitstoreport  |  -h  | Number of taxonomic hits to report in the classification step. [Default = 5] | No |
+|  --subcluster  |  -s  | True/False. Run secondary clustering for more accurate taxonomic classification [Default = True] | No |
+|  --evaluecutoff  |  -e  | E-value cutoff for hmmsearch [Default = 1]. | No |
+|  --tree_algorithm  |  -r  | Tree building algorithm (iqtree, raxml, or fasttree) [Default = iqtree] | No |
+|  --runmode  |  -a  | placement [Default] or de_novo. Indicates if you want your queries placed in larger tree of references, or if you want them set alone on their own tree. | No |
+|  --max_nodes_per_query  |  -m  | Maximum number of reference nodes to be potentially assigned to each query (max possible tree size is this value times the number of queries) [Default = 25]. | No |
+|  --min_marker_overlap_with_query  |  -q  | Minimum number of overlapping HMMs between a query its identified references [Default = 1]. | No |
+|  --min_marker_overlap_for_tree  |  -f  |  Minimum number of overlapping HMMs that must be shared between viral genomes for them to be placed on the same tree. [Default = 1]| No |
+|  --threads  |  -p  | Number of CPU threads to use [Default = 1]. | No |
+|  --tmpdir  |  -t  | Name of classification temporary directory [Default = tmp]. | No |
 
 ## Output files
 
