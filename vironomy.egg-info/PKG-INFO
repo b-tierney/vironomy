@@ -1,0 +1,18 @@
+Metadata-Version: 2.1
+Name: vironomy
+Version: 0.1.0
+Home-page: https://github.com/b-tierney/vironomy
+Author: Allen Institute for Artificial Intelligence
+Author-email: contact@allenai.org
+License: Apache
+Classifier: Intended Audience :: Science/Research
+Classifier: Development Status :: 3 - Alpha
+Classifier: License :: OSI Approved :: Apache Software License
+Classifier: Programming Language :: Python :: 3
+Classifier: Topic :: Scientific/Engineering :: Artificial Intelligence
+Requires-Python: >=3.7
+Description-Content-Type: text/markdown
+Provides-Extra: dev
+License-File: LICENSE
+
+# vironomy
