@@ -76,7 +76,7 @@ def classify(inputs,dbdir,outputdir,hitstoreport,subcluster,evaluecutoff,threads
 @click.option('-p','--threads', required = False, default=1, help='Number of CPU threads to use [Default = 1].')
 @click.option('-t','--tmpdir', required = False, default='tmp', help='Name of classification temporary directory [Default = tmp].')
 #@click.option('-v','--verbose', required = False, help='True/False. Show lots of tree building output?', is_flag=True)
-def phylogeny(classifyout,runmode,dbdir,max_nodes_per_query,min_marker_overlap_with_query,verbose,min_marker_overlap_for_tree,tree_algorithm,tmpdir,threads,outputdir,distances = None, markermatrix = None):
+def phylogeny(classifyout,runmode,dbdir,max_nodes_per_query,min_marker_overlap_with_query,min_marker_overlap_for_tree,tree_algorithm,tmpdir,threads,outputdir,distances = None, markermatrix = None):
 	if distances is None:
 		distances = pd.read_csv(classifyout + '/pairwise_distances.csv',index_col=0)
 	if markermatrix is None:
