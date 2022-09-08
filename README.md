@@ -66,7 +66,6 @@ vironomy phylogeny -c /path/to/classify/output/directory -d /path/to/databases
 ```
 ## Command line options (end_to_end mode)
 
-
 |     Full flag       | Abbreviation | Description | Required? |
 |-------------------------------------------------|---------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------|
 |  --inputs  |  -i  | File containing your query genomes. | Yes |
@@ -84,6 +83,19 @@ vironomy phylogeny -c /path/to/classify/output/directory -d /path/to/databases
 |  --tmpdir  |  -t  | Name of classification temporary directory [Default = tmp]. | No |
 
 ## Output files
+
+|  Filename and path   | Mode |  Description|
+|-----------------------------------------------|---------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------| 
+|  primary_clustering_taxonomic_report.csv | classify | Contains output of initial taxonomic classification (mapping between query and genbank species "groups", as well as the number of members of each group).
+|  secondary_clustering_taxonomic_report.csv | classify | Contains output of secondary (high resolution) taxonomic classification.
+simplified_taxonomy_report.csv | classify | Consensus taxonomic report based on all hits.
+query.pfam.tigrfam.annotations.cleaned | classify | HMM annotations for the query genomes.
+query_orfs.faa | classify | Predicted Open-Reading-Frames for query genomes.
+query_markers.csv| classify | Wide binary matrix containing marker presence/absence for query genomes.
+tree_*/| phylogeny | Contains output of treebuilding for a given set of genomes.
+
+Note that the tmp directory might also contain files of interest, like HMM/genome alignments.
+
 
 ## Unit testing
 
