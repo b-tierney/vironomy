@@ -66,7 +66,6 @@ vironomy phylogeny -c /path/to/classify/output/directory -d /path/to/databases
 ```
 ## Command line options (end_to_end mode)
 
-
 |     Full flag       | Abbreviation | Description | Required? |
 |-------------------------------------------------|---------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------|
 |  --inputs  |  -i  | File containing your query genomes. | Yes |
@@ -85,23 +84,51 @@ vironomy phylogeny -c /path/to/classify/output/directory -d /path/to/databases
 
 ## Output files
 
+|  Filename and path   | Mode |  Description|
+|-----------------------------------------------|---------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------| 
+|  primary_clustering_taxonomic_report.csv | classify | Contains output of initial taxonomic classification (mapping between query and genbank species "groups", as well as the number of members of each group).
+|  secondary_clustering_taxonomic_report.csv | classify | Contains output of secondary (high resolution) taxonomic classification.
+simplified_taxonomy_report.csv | classify | Consensus taxonomic report based on all hits.
+query.pfam.tigrfam.annotations.cleaned | classify | HMM annotations for the query genomes.
+query_orfs.faa | classify | Predicted Open-Reading-Frames for query genomes.
+query_markers.csv| classify | Wide binary matrix containing marker presence/absence for query genomes.
+tree_*/| phylogeny | Contains output of treebuilding for a given set of genomes.
+
+Note that the tmp directory might also contain files of interest, like HMM/genome alignments.
+
+
 ## Unit testing
 
 ## Dependencies
 
+Python dependencies are listed in the requirements.txt file. 
+
+Critical non-python dependencies (complete list in the yaml file) are:
+
+* phanotate V1.5.0
+* hmmer V3.3.2
+* trnascan-se V1.0.9
+* famsa V2.1.2
+* emboss V 6.6.0
+* fasttree
+* iqtree
+* RAxML
+* parallel
+
 ## Citation
 
-## Contact
+N/A
 
+# License
 
+[MIT](https://github.com/chiragjp/quantvoe/blob/main/LICENSE)
 
+## Author
 
-
-
-
-
-
-
-
+* Braden T Tierney
+* Web: https://www.bradentierney.com/
+* Twitter: https://twitter.com/BradenTierney
+* LinkedIn: https://www.linkedin.com/in/bradentierney/
+* Scholar: https://scholar.google.com/citations?user=6oSRYqMAAAAJ&hl=en&authuser=1&oi=ao
 
 
