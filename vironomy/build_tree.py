@@ -269,16 +269,18 @@ class treebuild:
 		pipe = ''
 		#if self.verbose == False:
 	#		pipe = '>/dev/null'
-		for t in self.hmms_to_align.keys(): 
+		for t in self.hmms_to_align.keys():
 			print('		Building %s'%t)
 			fullalignment = self.tmpdir + '/' + t + '/contig_alignment_all_hmms.msa'
 			treepath = self.outdir + '/' + t + '/' + t
 			os.system('mkdir -p %s'%(self.outdir + '/' + t + '/'))
 			if self.tree_algorithm == 'iqtree':
 				os.system("iqtree -s %s --prefix %s -m MFP --seqtype AA -T %s &>/dev/null"%(fullalignment,treepath,self.threads))
-				treefiles.append([self.tmpdir + '/' + t + '/' + t + '.iqtree','iqtree'])
+				treefiles.append([treepath + '.iqtree','iqtree'])
 			if self.tree_algorithm == 'fasttree':
-				os.system("")
+				os.system("export OMP_NUM_THREADS=%s"%self.threads)
+				os.system("fasttree %s > %s.fasttree.tree &>/dev/null"%(fullalignment,treepath))
+				treefiles.append([treepath + '.fasttree.tree','fasttree'])
 			if self.tree_algorithm == 'RAxML':
 				os.system("")
 			print('		Finished tree')

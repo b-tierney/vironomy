@@ -14,6 +14,7 @@ dependencies:
   - emboss=6.6.0=h440b012_4
   - expat=2.4.8=h27087fc_0
   - famsa=2.1.2=h9f5acd7_0
+  - fasttree=2.1.11=hec16e2b_1
   - fontconfig=2.14.0=h8e229c2_0
   - freetype=2.12.1=hca18f0e_0
   - giflib=5.2.1=h36c2ea0_2
@@ -38,14 +39,13 @@ dependencies:
   - libwebp-base=1.2.0=h7f98852_2
   - libzlib=1.2.12=h166bdaf_2
   - ncurses=6.3=h27087fc_1
-  - openssl=3.0.5=h166bdaf_1
+  - openssl=3.0.5=h166bdaf_2
   - parallel=20220722=ha770c72_0
   - perl=5.32.1=2_h7f98852_perl5
   - pip=22.2.2=pyhd8ed1ab_0
   - python=3.9.13=h2660328_0_cpython
   - python_abi=3.9=2_cp39
   - readline=8.1.2=h0f457ee_0
-  - setuptools=65.2.0=py39hf3d152e_0
   - sqlite=3.39.2=h4ff8645_1
   - tk=8.6.12=h27826a3_0
   - trimal=1.4.1=h9f5acd7_6
@@ -120,6 +120,7 @@ dependencies:
     - rich==12.5.1
     - scipy==1.9.0
     - secretstorage==3.3.3
+    - setuptools==65.3.0
     - six==1.16.0
     - snowballstemmer==2.2.0
     - soupsieve==2.3.2.post1
