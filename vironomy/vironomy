@@ -1,14 +1,14 @@
 #!/usr/bin/python
 
-from utils import import_queries,import_reference_dbs,import_full_db
+from vironomy.utils import import_queries,import_reference_dbs,import_full_db
 import os
 import pandas as pd 
 import scipy
 import itertools
 from collections import Counter
 from Bio import SeqIO
-from build_tree import treebuild
-from classify import queryset
+from vironomy.build_tree import treebuild
+from vironomy.classify import queryset
 import click
 
 ### next dev tasks

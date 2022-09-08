@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-from utils import import_queries,import_reference_dbs,import_full_db
+from vironomy.utils import import_queries,import_reference_dbs,import_full_db
 import os
 import pandas as pd 
 import scipy
