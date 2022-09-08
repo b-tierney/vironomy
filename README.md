@@ -101,19 +101,34 @@ Note that the tmp directory might also contain files of interest, like HMM/genom
 
 ## Dependencies
 
+Python dependencies are listed in the requirements.txt file. 
+
+Critical non-python dependencies (complete list in the yaml file) are:
+
+* phanotate V1.5.0
+* hmmer V3.3.2
+* trnascan-se V1.0.9
+* famsa V2.1.2
+* emboss V 6.6.0
+* fasttree
+* iqtree
+* RAxML
+* parallel
+
 ## Citation
 
-## Contact
+N/A
 
+# License
 
+[MIT](https://github.com/chiragjp/quantvoe/blob/main/LICENSE)
 
+## Author
 
-
-
-
-
-
-
-
+* Braden T Tierney
+* Web: https://www.bradentierney.com/
+* Twitter: https://twitter.com/BradenTierney
+* LinkedIn: https://www.linkedin.com/in/bradentierney/
+* Scholar: https://scholar.google.com/citations?user=6oSRYqMAAAAJ&hl=en&authuser=1&oi=ao
 
 
