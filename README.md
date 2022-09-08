@@ -27,15 +27,17 @@ conda activate vironomy
 Third, install the package itself:
 
 ```
-
+pip install .
 ```
+
+You can now call ```vironomy``` to see the top-level commands.
 
 ## Databases
 
 Vironomy uses marker databases based on GenBank's viral genome collection. To set them up in a directory of your choosing, run:
 
 ```
-python vironomy/vironomy.py  download_db -p /path/to/where/you/want/databases/installed
+vironomy download_db -p /path/to/where/you/want/databases/installed
 ```
 
 ## Input
@@ -46,13 +48,24 @@ Vironomy takes viral contigs -- all in one fasta file -- as input. Make sure you
 
 Vironomy consists of two steps, classification and phylogeny-building, that can be run together or independently:
 
-For the full pipeline:
+For the full pipeline with the default parameters:
+``` 
+vironomy end_to_end -i /path/to/viral/contigs -d /path/to/databases 
+```
 
+To just run classification:
 
-For just classification:
+```
+vironomy classify -i /path/to/viral/contigs -d /path/to/databases 
+```
 
+To just run phylogenetic analysis on an existing classified dataset:
 
-For just phylogenetic tree construction:
+```
+vironomy phylogeny -c /path/to/classify/output/directory -d /path/to/databases 
+```
+
+## Parameters
 
 ## Output files
 
