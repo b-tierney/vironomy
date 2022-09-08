@@ -159,8 +159,6 @@ class treebuild:
 		for i in range(0,len(self.finaltrees)):
 			t = self.finaltrees[i]
 			treeid = 'tree_'+str(i)
-			print(treeid)
-			print(t)
 			mergedsub = self.full_hmm_matrix.loc[t,:]
 			sums = mergedsub.sum()
 			tokeep = sums[sums>0].sort_values(ascending=False).index
@@ -279,7 +277,7 @@ class treebuild:
 				treefiles.append([treepath + '.iqtree','iqtree'])
 			if self.tree_algorithm == 'fasttree':
 				os.system("export OMP_NUM_THREADS=%s"%self.threads)
-				os.system("fasttree %s > %s.fasttree.tree &>/dev/null"%(fullalignment,treepath))
+				os.system("fasttree %s > %s.fasttree.tree"%(fullalignment,treepath))
 				treefiles.append([treepath + '.fasttree.tree','fasttree'])
 			if self.tree_algorithm == 'RAxML':
 				os.system("")
