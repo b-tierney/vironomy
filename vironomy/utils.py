@@ -42,7 +42,7 @@ def split_fasta(sequencedata,threads,outdir):
 	outnames = []
 	os.system("mkdir -p %s/splitqueries"%outdir)
 	keys = list(sequencedata.keys())
-	size = math.ceil(len(keys)/threads)
+	size = 1
 	chunks = [keys[i:i + size] for i in range(0, len(keys), size)]
 	count = -1
 	for c in chunks:
