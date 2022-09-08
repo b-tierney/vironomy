@@ -19,6 +19,7 @@ git clone https://github.com/b-tierney/vironomy.git
 Second, set up and activate a conda environment using the provided yaml file and install external dependencies:
 
 ```
+cd vironomy
 conda env create -n vironomy -f vironomy.yaml 
 conda activate vironomy
 ```
