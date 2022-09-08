@@ -131,8 +131,12 @@ def download_databases(output_path):
 	os.system("tar -zxvf %s/%s -C %s"%(output_path,"vironomy_database.tar.gz",output_path))
 	print("Databases have been downloaded and unpacked. When you run vironomy, write your dbdir path as: \n\n %s/vironomy_database"%(output_path))
 
-if __name__ == "__main__":
+
+def main():
 	cli()
+
+if __name__ == "__main__":
+	main()
 
 
 

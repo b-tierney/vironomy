@@ -3,8 +3,11 @@ README.md
 pyproject.toml
 setup.py
 vironomy/__init__.py
-vironomy/py.typed
+vironomy/build_tree.py
+vironomy/classify.py
+vironomy/utils.py
 vironomy/version.py
+vironomy/vironomy
 vironomy.egg-info/PKG-INFO
 vironomy.egg-info/SOURCES.txt
 vironomy.egg-info/dependency_links.txt
