@@ -9,6 +9,7 @@ from collections import Counter
 from Bio import SeqIO
 from sklearn.metrics.pairwise import pairwise_distances
 from multiprocessing import Pool
+import tqdm
 
 class treebuild:
 
@@ -43,7 +44,6 @@ class treebuild:
 			groupstoload.extend(queryline.nsmallest(n = self.max_nodes_per_query).index)
 		taxatoload = list(self.taxmap[self.taxmap['group'].isin([int(x) for x in groupstoload])].genbank_contigid)
 		self.refdb = import_full_db(taxatoload,self.ref_markermatrix)
-		self.refdb.to_csv('TEMPREF.csv')
 		print('	Finding potential nodes to include')
 		self.distances_individual = pd.DataFrame(pairwise_distances(self.query_markermatrix,self.refdb,n_jobs = self.threads))
 		self.distances_individual.columns = self.refdb.index
@@ -102,7 +102,7 @@ class treebuild:
 		query = self.distances_individual.iloc[i,:].name
 		queryseries = self.query_markermatrix.loc[query,:]
 		matches = queryseries.eq(self.refdb).sum(axis=1)
-		return(list(matches[matches>self.min_marker_overlap_with_query].index))
+		return(list(matches[matches>=self.min_marker_overlap_with_query].index))
 
 	def generate_treelist(self,info):
 		q = info[0]
@@ -115,11 +115,11 @@ class treebuild:
 		return(potentialtree)
 
 	def winnow_nodes_and_split_trees(self):
-		print('	Winnowing nodes based on hmm overlap.')
+		print('	Winnowing nodes based on hmm overlap using %s thread(s).'%self.threads)
 		# for each query, filter comparator nodes based on hmm overlap and find maximal set of reference contigs
 		self.refdb[self.refdb==0] = -1
-		pool = Pool(self.threads)                         
-		tokeep = pool.map(self.winnow, range(0,self.distances_individual.shape[0])) 
+		pool = Pool(self.threads)    
+		tokeep = pool.map(self.winnow, range(0,self.distances_individual.shape[0]))
 		pool.close()
 		tokeep = [item for sublist in tokeep for item in sublist]
 		tokeep = list(set(tokeep))
@@ -128,6 +128,7 @@ class treebuild:
 		refdb_sub[refdb_sub == -1] = 0
 		merged = pd.concat([refdb_sub,self.query_markermatrix])
 		# split into separate trees if necessary
+		print('	Finding optimal trees.')
 		if(self.min_marker_overlap_for_tree>0):
 			queries = list(set(list(self.query_markermatrix.index)))
 			overlaps = merged.dot(merged.T)
@@ -138,7 +139,6 @@ class treebuild:
 			pool = Pool(self.threads)                         
 			treelist = pool.map(self.generate_treelist, [[x,querydist] for x in querydist.index]) 
 			pool.close()
-			print(treelist)
 			treelist.sort()
 			treelist = list(treelist for treelist,_ in itertools.groupby(treelist))
 			treelist.reverse()
@@ -163,13 +163,17 @@ class treebuild:
 		self.finaltrees = [x for x in self.finaltrees if len(x)>=3]
 		self.full_hmm_matrix = merged
 		self.queries = queries
+		lengths =[len(x) for x in self.finaltrees]
 		print('	Going to generate a total of %s tree(s) based on your provided parameters.'%len(self.finaltrees))
+		print('		Smallest tree has %s genomes'%min(lengths))
+		print('		Largest tree has %s genomes'%max(lengths))
 
 	def find_tree_specific_hmms(self):
 		print('	Finding minimum set of HMMs for alignment.')
 		self.metadata_sharedhmms = {}
 		self.hmms_to_align = {}
 		for i in range(0,len(self.finaltrees)):
+			#print(i)
 			t = self.finaltrees[i]
 			treeid = 'tree_'+str(i)
 			mergedsub = self.full_hmm_matrix.loc[t,:]
