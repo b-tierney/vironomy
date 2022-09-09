@@ -8,6 +8,7 @@ import itertools
 from collections import Counter
 from Bio import SeqIO
 from sklearn.metrics.pairwise import pairwise_distances
+from multiprocessing import Pool
 
 class treebuild:
 
@@ -42,6 +43,7 @@ class treebuild:
 			groupstoload.extend(queryline.nsmallest(n = self.max_nodes_per_query).index)
 		taxatoload = list(self.taxmap[self.taxmap['group'].isin([int(x) for x in groupstoload])].genbank_contigid)
 		self.refdb = import_full_db(taxatoload,self.ref_markermatrix)
+		self.refdb.to_csv('TEMPREF.csv')
 		print('	Finding potential nodes to include')
 		self.distances_individual = pd.DataFrame(pairwise_distances(self.query_markermatrix,self.refdb,n_jobs = self.threads))
 		self.distances_individual.columns = self.refdb.index
@@ -96,16 +98,30 @@ class treebuild:
 		self.queries = queries
 		print('	Going to generate a total of %s tree(s) based on your provided parameters.'%len(self.finaltrees))
 
+	def winnow(self,i):
+		query = self.distances_individual.iloc[i,:].name
+		queryseries = self.query_markermatrix.loc[query,:]
+		matches = queryseries.eq(self.refdb).sum(axis=1)
+		return(list(matches[matches>self.min_marker_overlap_with_query].index))
+
+	def generate_treelist(self,info):
+		q = info[0]
+		querydist = info[1]
+		if len(querydist.loc[q].shape)==2:
+			querydist_sub = querydist.loc[q].sum()
+		else:
+			querydist_sub = querydist.loc[q]
+		potentialtree = list(querydist_sub[querydist_sub>0].index)
+		return(potentialtree)
+
 	def winnow_nodes_and_split_trees(self):
 		print('	Winnowing nodes based on hmm overlap.')
-		# for each query, filter comparator nodes based on hmm overlap
-		tokeep = []
-		for i in range(0,self.distances_individual.shape[0]):
-			query = self.distances_individual.iloc[i,:].name
-			queryseries = self.query_markermatrix.loc[query,:]
-			self.refdb[self.refdb==0] = -1
-			matches = queryseries.eq(self.refdb).sum(axis=1)
-			tokeep.extend(list(matches[matches>self.min_marker_overlap_with_query].index))
+		# for each query, filter comparator nodes based on hmm overlap and find maximal set of reference contigs
+		self.refdb[self.refdb==0] = -1
+		pool = Pool(self.threads)                         
+		tokeep = pool.map(self.winnow, range(0,self.distances_individual.shape[0])) 
+		pool.close()
+		tokeep = [item for sublist in tokeep for item in sublist]
 		tokeep = list(set(tokeep))
 		refdb_sub  = self.refdb.loc[tokeep,:]
 		self.referencecontigsall = tokeep
@@ -119,19 +135,17 @@ class treebuild:
 			querydist[querydist<self.min_marker_overlap_for_tree]=0
 			querydist[querydist!=0]=1
 			treelist = []
-			for q in querydist.index:
-				if len(querydist.loc[q].shape)==2:
-					querydist_sub = querydist.loc[q].sum()
-				else:
-					querydist_sub = querydist.loc[q]
-				potentialtree = list(querydist_sub[querydist_sub>0].index)
-				treelist.append(potentialtree)
+			pool = Pool(self.threads)                         
+			treelist = pool.map(self.generate_treelist, [[x,querydist] for x in querydist.index]) 
+			pool.close()
+			print(treelist)
 			treelist.sort()
 			treelist = list(treelist for treelist,_ in itertools.groupby(treelist))
 			treelist.reverse()
 			queriesleft = queries
 			finaltrees = []
 			for t in treelist:
+				print(t)
 				done = list(set(t).intersection(set(queriesleft)))
 				queriesleft = set(queriesleft) - set(done)
 				if len(done)>0:
