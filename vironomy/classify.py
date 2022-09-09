@@ -7,6 +7,7 @@ import scipy
 import itertools
 from collections import Counter
 from Bio import SeqIO
+from sklearn.metrics.pairwise import pairwise_distances
 
 class queryset:
 
@@ -69,7 +70,7 @@ class queryset:
 	def primary_classification(self):
 		#get distances
 		print('	Computing distances between queries and reference clusters...')
-		distances = pd.DataFrame(scipy.spatial.distance_matrix(x = self.markermatrix, y = self.referencedbs))
+		distances = pd.DataFrame(pairwise_distances(self.markermatrix, self.referencedbs, n_jobs = self.threads))
 		distances.columns=self.referencedbs.index
 		# get index of all matches 
 		minvals = list(distances.min(axis=1))
@@ -112,7 +113,7 @@ class queryset:
 			# compute distances for top hitting groups
 			m_sub = self.markermatrix[self.markermatrix.index == m]
 			db_sub = full_database.loc[list(initial_annotation.genbank_contigid),:]
-			distances = pd.DataFrame(scipy.spatial.distance_matrix(x = m_sub, y = db_sub))
+			distances = pd.DataFrame(pairwise_distances(m_sub, db_sub,n_jobs = self.threads))
 			distances.columns=db_sub.index
 			# take best hits as before and report top within group
 			tophits = distances.apply(pd.Series.nsmallest, axis=1, n=self.hitstoreport).T.reset_index()

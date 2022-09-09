@@ -25,6 +25,7 @@ iniconfig==1.1.1
 isort==5.10.1
 jeepney==0.8.0
 Jinja2==3.1.2
+joblib==1.1.0
 keyring==23.8.2
 livereload==2.6.3
 markdown-it-py==2.1.0
@@ -60,9 +61,11 @@ requests==2.28.1
 requests-toolbelt==0.9.1
 rfc3986==2.0.0
 rich==12.5.1
+scikit-learn==1.1.2
 scipy==1.9.0
 SecretStorage==3.3.3
 six==1.16.0
+sklearn==0.0
 snowballstemmer==2.2.0
 soupsieve==2.3.2.post1
 Sphinx==5.0.2
@@ -76,10 +79,12 @@ sphinxcontrib-htmlhelp==2.0.0
 sphinxcontrib-jsmath==1.0.1
 sphinxcontrib-qthelp==1.0.3
 sphinxcontrib-serializinghtml==1.1.5
+threadpoolctl==3.1.0
 tomli==2.0.1
 tornado==6.2
 twine==4.0.1
 typing_extensions==4.3.0
 urllib3==1.26.12
+vironomy @ file:///athena/masonlab/scratch/users/btt4001/viral_classifier/vironomy
 webencodings==0.5.1
 zipp==3.8.1

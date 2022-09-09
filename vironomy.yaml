@@ -83,6 +83,7 @@ dependencies:
     - isort==5.10.1
     - jeepney==0.8.0
     - jinja2==3.1.2
+    - joblib==1.1.0
     - keyring==23.8.2
     - livereload==2.6.3
     - markdown-it-py==2.1.0
@@ -118,10 +119,12 @@ dependencies:
     - requests-toolbelt==0.9.1
     - rfc3986==2.0.0
     - rich==12.5.1
+    - scikit-learn==1.1.2
     - scipy==1.9.0
     - secretstorage==3.3.3
     - setuptools==65.3.0
     - six==1.16.0
+    - sklearn==0.0
     - snowballstemmer==2.2.0
     - soupsieve==2.3.2.post1
     - sphinx==5.0.2
@@ -135,6 +138,7 @@ dependencies:
     - sphinxcontrib-jsmath==1.0.1
     - sphinxcontrib-qthelp==1.0.3
     - sphinxcontrib-serializinghtml==1.1.5
+    - threadpoolctl==3.1.0
     - tomli==2.0.1
     - tornado==6.2
     - twine==4.0.1

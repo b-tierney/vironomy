@@ -7,12 +7,12 @@ import scipy
 import itertools
 from collections import Counter
 from Bio import SeqIO
+from sklearn.metrics.pairwise import pairwise_distances
 
 class treebuild:
 
-	def __init__(self,verbose,taxmap,distances,query_markermatrix,ref_markermatrix,treetype,max_nodes_per_query,min_marker_overlap_with_query,min_marker_overlap_for_tree,genbankannos,genbankorfs,queryorfs,queryannos,tree_algorithm,tmpdir,outdir,threads,bootstrapnum):
+	def __init__(self,taxmap,distances,query_markermatrix,ref_markermatrix,treetype,max_nodes_per_query,min_marker_overlap_with_query,min_marker_overlap_for_tree,genbankannos,genbankorfs,queryorfs,queryannos,tree_algorithm,tmpdir,outdir,threads,bootstrapnum):
 		self.treetype = treetype
-		self.verbose = verbose
 		self.taxmap = taxmap
 		self.distances = distances
 		self.max_nodes_per_query = max_nodes_per_query
@@ -43,13 +43,13 @@ class treebuild:
 		taxatoload = list(self.taxmap[self.taxmap['group'].isin([int(x) for x in groupstoload])].genbank_contigid)
 		self.refdb = import_full_db(taxatoload,self.ref_markermatrix)
 		print('	Finding potential nodes to include')
-		self.distances_individual = pd.DataFrame(scipy.spatial.distance_matrix(x = self.query_markermatrix, y = self.refdb))
+		self.distances_individual = pd.DataFrame(pairwise_distances(self.query_markermatrix,self.refdb,n_jobs = self.threads))
 		self.distances_individual.columns = self.refdb.index
 		self.distances_individual.index = self.query_markermatrix.index
 
 	def initialize_denovo_tree(self):
 		# get all pairwise distances for marker matrix
-		self.distances_individual = pd.DataFrame(scipy.spatial.distance_matrix(x = self.query_markermatrix, y = self.query_markermatrix))
+		self.distances_individual = pd.DataFrame(pairwise_distances(self.query_markermatrix,self.query_markermatrix,n_jobs = self.threads))
 		self.distances_individual.columns = self.query_markermatrix.index
 		self.distances_individual.index = self.query_markermatrix.index
 
@@ -260,7 +260,7 @@ class treebuild:
 							alignment = alignment + '-'*int(m[2])
 					w.write(c + '\n')
 					w.write(str(alignment) + '\n')
-
+### NEED A CLEANUP FUNCTION THAT MOVES THE ALIGNMENTS OVER AND ALSO MOVES THE ORFS
 	def build_tree(self):
 		print('	Trees will be built with %s.'%(self.tree_algorithm))
 		treefiles = []
@@ -273,7 +273,7 @@ class treebuild:
 			treepath = self.outdir + '/' + t + '/' + t
 			os.system('mkdir -p %s'%(self.outdir + '/' + t + '/'))
 			if self.tree_algorithm == 'iqtree':
-				os.system("iqtree -s %s --prefix %s -m MFP --seqtype AA -T %s &>/dev/null"%(fullalignment,treepath,self.threads))
+				os.system("iqtree -s %s --prefix %s -m MFP --seqtype AA -T %s &> %s/treelog"%(fullalignment,treepath,self.threads,self.tmpdir))
 				treefiles.append([treepath + '.iqtree','iqtree'])
 			if self.tree_algorithm == 'fasttree':
 				os.system("export OMP_NUM_THREADS=%s"%self.threads)
