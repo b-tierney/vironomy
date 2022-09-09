@@ -165,35 +165,41 @@ class treebuild:
 		self.queries = queries
 		lengths =[len(x) for x in self.finaltrees]
 		print('	Going to generate a total of %s tree(s) based on your provided parameters.'%len(self.finaltrees))
-		print('		Smallest tree has %s genomes'%min(lengths))
-		print('		Largest tree has %s genomes'%max(lengths))
+		if len(lengths)>1:
+			print('		Smallest tree has %s genomes'%min(lengths))
+			print('		Largest tree has %s genomes'%max(lengths))
+
+	def parallel_hmm_hunting(self,i):
+		print(i)
+		t = self.finaltrees[i]
+		treeid = 'tree_'+str(i)
+		mergedsub = self.full_hmm_matrix.loc[t,:]
+		sums = mergedsub.sum()
+		tokeep = sums[sums>0].sort_values(ascending=False).index
+		mergedsub = mergedsub.loc[:,tokeep]
+		contigcoverage = []
+		hmms_for_alignment=[]
+		contigcoverage.extend(list(set(list(mergedsub.index))))
+		for i in mergedsub.columns:
+			col = mergedsub.loc[:,i]
+			col = col[col>0].index
+			contigcoverage.extend(list(col))
+			temp = Counter(contigcoverage)
+			temp = pd.DataFrame.from_dict(temp,orient='index')
+			hmms_for_alignment.append(i)
+			if len(temp[temp<(self.min_marker_overlap_for_tree+1)].dropna().index) == 0:
+				return([treeid,mergedsub.loc[:,hmms_for_alignment],hmms_for_alignment])
 
 	def find_tree_specific_hmms(self):
 		print('	Finding minimum set of HMMs for alignment.')
 		self.metadata_sharedhmms = {}
 		self.hmms_to_align = {}
-		for i in range(0,len(self.finaltrees)):
-			#print(i)
-			t = self.finaltrees[i]
-			treeid = 'tree_'+str(i)
-			mergedsub = self.full_hmm_matrix.loc[t,:]
-			sums = mergedsub.sum()
-			tokeep = sums[sums>0].sort_values(ascending=False).index
-			mergedsub = mergedsub.loc[:,tokeep]
-			contigcoverage = []
-			hmms_for_alignment=[]
-			contigcoverage.extend(list(set(list(mergedsub.index))))
-			for i in mergedsub.columns:
-				col = mergedsub.loc[:,i]
-				col = col[col>0].index
-				contigcoverage.extend(list(col))
-				temp = Counter(contigcoverage)
-				temp = pd.DataFrame.from_dict(temp,orient='index')
-				hmms_for_alignment.append(i)
-				if len(temp[temp<(self.min_marker_overlap_for_tree+1)].dropna().index) == 0:
-					self.metadata_sharedhmms[treeid] = mergedsub.loc[:,hmms_for_alignment]
-					self.hmms_to_align[treeid] = hmms_for_alignment
-					break
+		pool = Pool(self.threads)                         
+		treeout = pool.map(self.parallel_hmm_hunting, range(0,len(self.finaltrees))) 
+		pool.close()
+		for t in treeout:
+			self.metadata_sharedhmms[t[0]] = t[1]
+			self.hmms_to_align[t[0]] = t[2]
 		return(self.metadata_sharedhmms)
 
 	def prep_for_alignment(self):
@@ -277,7 +283,7 @@ class treebuild:
 							alignment = alignment + '-'*int(m[2])
 					w.write(c + '\n')
 					w.write(str(alignment) + '\n')
-### NEED A CLEANUP FUNCTION THAT MOVES THE ALIGNMENTS OVER AND ALSO MOVES THE ORFS
+
 	def build_tree(self):
 		print('	Trees will be built with %s.'%(self.tree_algorithm))
 		treefiles = []
