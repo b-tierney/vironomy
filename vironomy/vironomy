@@ -13,7 +13,6 @@ import click
 
 ### next dev tasks
 
-# package
 # metadata for each contig and better logging
 # check dependencies (helper function class)
 # write unit tests
@@ -47,15 +46,24 @@ def cli():
 @click.option('-e','--evaluecutoff', required = False, default=1, help='E-value cutoff for hmmsearch [Default = 1].',type = int)
 @click.option('-p','--threads', required = False, default=1, help='Number of CPU threads to use [Default = 1].', type = int)
 @click.option('-t','--tmpdir', required = False, default='tmp', help='Name of classification temporary directory [Default = tmp].',type = str)
-def classify(inputs,dbdir,outputdir,hitstoreport,subcluster,evaluecutoff,threads,tmpdir):
+@click.option('-f','--force', is_flag = True, help='Remake any existing ORF calling, HMM, or alignment files.')
+def classify(inputs,dbdir,outputdir,hitstoreport,subcluster,evaluecutoff,threads,tmpdir,force):
 	fulldb = dbdir + '/full_sc_marker_db.csv'
 	markermatrixref = dbdir+ '/single_copy_marker_database.csv'
 	taxmap = dbdir + '/group_taxid_contigid_mapping_annotation_data.tsv'
 	hmmpath = dbdir + '/single_copy_marker_db.hmm'
-	# check that databases exist
+	predictedgenesout = outputdir + '/query_orfs.faa' 
+	markerout = outputdir + '/query.pfam.tigrfam.annotations.cleaned' 	
 	data = queryset(fastafile = inputs,hitstoreport = hitstoreport,subcluster = subcluster,fulldb = fulldb,markermatrixref = markermatrixref,taxmapping = taxmap,hmmpath = hmmpath,threads = threads,evaluecutoff = evaluecutoff,tmpdir = tmpdir,outputdir = outputdir)
-	data.call_orfs()
-	markermatrix = data.identify_markers()
+	if os.path.exists(predictedgenesout) and not force:
+		print('	ORF calling output exists, using these data. To regenerate, rename your output directory or run with the "--force" flag.')
+	if os.path.exists(predictedgenesout) == False or force:
+		data.call_orfs()	
+	if os.path.exists(markerout) and not force:
+		print('	HMM identification output exists, using these data. To regenerate, rename your output directory or run with the "--force" flag.')
+	if os.path.exists(markerout)==False or force:
+		data.identify_markers()
+	markermatrix = data.parse_markers()
 	distances = data.primary_classification()
 	if subcluster == True:
 		data.secondary_classification()
@@ -72,11 +80,12 @@ def classify(inputs,dbdir,outputdir,hitstoreport,subcluster,evaluecutoff,threads
 @click.option('-a','--runmode', default = 'placement', required=False, help='placement [Default] or de_novo. Indicates if you want your queries placed in larger tree of references, or if you want them set alone on their own tree.',type = str)
 @click.option('-m','--max_nodes_per_query', required = False,default=25, help='Maximum number of reference nodes to be potentially assigned to each query (max possible tree size is this value times the number of queries) [Default = 25].',type = int)
 @click.option('-q','--min_marker_overlap_with_query', required = False,default=1, help='Minimum number of overlapping HMMs between a query its identified references [Default = 1].',type = int)
-@click.option('-f','--min_marker_overlap_for_tree', required = False,default=1, help='Minimum number of overlapping HMMs that must be shared between viral genomes for them to be placed on the same tree. [Default = 1]',type = int)
+@click.option('-k','--min_marker_overlap_for_tree', required = False,default=1, help='Minimum number of overlapping HMMs that must be shared between viral genomes for them to be placed on the same tree. [Default = 1]',type = int)
 @click.option('-p','--threads', required = False, default=1, help='Number of CPU threads to use [Default = 1].')
 @click.option('-t','--tmpdir', required = False, default='tmp', help='Name of classification temporary directory [Default = tmp].')
-#@click.option('-v','--verbose', required = False, help='True/False. Show lots of tree building output?', is_flag=True)
-def phylogeny(classifyout,runmode,dbdir,max_nodes_per_query,min_marker_overlap_with_query,min_marker_overlap_for_tree,tree_algorithm,tmpdir,threads,outputdir,distances = None, markermatrix = None):
+@click.option('-f','--force', is_flag = True, help='Remake any existing ORF calling, HMM, or alignment files.')
+#@click.option('-v','--verbose', is_flag=True, Show lots of tree building output?')
+def phylogeny(force,classifyout,runmode,dbdir,max_nodes_per_query,min_marker_overlap_with_query,min_marker_overlap_for_tree,tree_algorithm,tmpdir,threads,outputdir,distances = None, markermatrix = None):
 	if distances is None:
 		distances = pd.read_csv(classifyout + '/pairwise_distances.csv',index_col=0)
 	if markermatrix is None:
@@ -114,13 +123,14 @@ def phylogeny(classifyout,runmode,dbdir,max_nodes_per_query,min_marker_overlap_w
 @click.option('-a','--runmode', default = 'placement', required=False, help='placement [Default] or de_novo. Indicates if you want your queries placed in larger tree of references, or if you want them set alone on their own tree.',type = str)
 @click.option('-m','--max_nodes_per_query', required = False,default=25, help='Maximum number of reference nodes to be potentially assigned to each query (max possible tree size is this value times the number of queries) [Default = 25].',type = int)
 @click.option('-q','--min_marker_overlap_with_query', required = False,default=1, help='Minimum number of overlapping HMMs between a query its identified references [Default = 1].',type = int)
-@click.option('-f','--min_marker_overlap_for_tree', required = False,default=1, help='Minimum number of overlapping HMMs that must be shared between viral genomes for them to be placed on the same tree. [Default = 1]',type = int)
+@click.option('-k','--min_marker_overlap_for_tree', required = False,default=1, help='Minimum number of overlapping HMMs that must be shared between viral genomes for them to be placed on the same tree. [Default = 1]',type = int)
 @click.option('-p','--threads', required = False, default=1, help='Number of CPU threads to use [Default = 1].')
 @click.option('-t','--tmpdir', required = False, default='tmp_vironomy_end_to_end', help='Name of classification temporary directory [Default = tmp].')
+@click.option('-f','--force', is_flag = True, help='Remake any existing ORF calling, HMM, or alignment files.')
 #@click.option('-v','--verbose', required = False, help='True/False. Show lots of tree building output?', is_flag=True)
 @click.pass_context
-def end_to_end(ctx,inputs,dbdir,outputdir,hitstoreport,subcluster,evaluecutoff,tree_algorithm,runmode,max_nodes_per_query,min_marker_overlap_with_query,min_marker_overlap_for_tree,threads,tmpdir):
-	markermatrix,distances = ctx.invoke(classify,inputs = inputs,dbdir = dbdir,outputdir = outputdir,hitstoreport = hitstoreport,subcluster = subcluster,evaluecutoff = evaluecutoff,threads = threads,tmpdir = tmpdir)
+def end_to_end(ctx,force,inputs,dbdir,outputdir,hitstoreport,subcluster,evaluecutoff,tree_algorithm,runmode,max_nodes_per_query,min_marker_overlap_with_query,min_marker_overlap_for_tree,threads,tmpdir):
+	markermatrix,distances = ctx.invoke(classify,inputs = inputs,force = force,dbdir = dbdir,outputdir = outputdir,hitstoreport = hitstoreport,subcluster = subcluster,evaluecutoff = evaluecutoff,threads = threads,tmpdir = tmpdir)
 	ctx.invoke(phylogeny, distances = distances, markermatrix = markermatrix, classifyout = outputdir,runmode = runmode,dbdir = dbdir,max_nodes_per_query = max_nodes_per_query,min_marker_overlap_with_query = min_marker_overlap_with_query, min_marker_overlap_for_tree = min_marker_overlap_for_tree,tree_algorithm = tree_algorithm, tmpdir = tmpdir, threads = threads, outputdir = outputdir)
 
 @cli.command('download_db')

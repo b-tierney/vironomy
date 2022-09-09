@@ -44,6 +44,8 @@ class queryset:
 		os.system("hmmsearch --tblout %s/query.pfam.tigrfam.annotations --cpu %s %s %s/query_orfs.faa >/dev/null"%(self.tmpdir,self.threads,self.hmmpath,self.outputdir))
 		print('	Parsing hmmsearch output.')
 		os.system("""tail -n +4 %s/query.pfam.tigrfam.annotations | head -n -10 | awk 'BEGIN{OFS="\t";} {print $1,$3,$5}' > "%s/query.pfam.tigrfam.annotations.cleaned" """%(self.tmpdir,self.outputdir))
+
+	def parse_markers(self):
 		self.markermatrix = pd.read_csv("%s/query.pfam.tigrfam.annotations.cleaned"%(self.outputdir),header=None,sep='\t')
 		print('	Hmmsearch found %s hits across all samples.'%(self.markermatrix.shape[0]))
 		self.markermatrix = self.markermatrix[self.markermatrix.iloc[:,2]<float(self.evaluecutoff)]
