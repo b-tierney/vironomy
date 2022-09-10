@@ -67,8 +67,11 @@ def classify(inputs,dbdir,outputdir,hitstoreport,subcluster,evaluecutoff,threads
 	if subcluster == True:
 		data.secondary_classification()
 	data.parse_taxonomy()
+	print('	Writing distance matrix and query hmm presence/absence matrix to file.')
 	distances.to_csv(outputdir + '/pairwise_distances.csv')
 	markermatrix.to_csv(outputdir + '/query_markers.csv')
+	print('<<<<<< Output files are stored in %s >>>>>>>'%(self.outputdir))
+
 	return([markermatrix,distances])
 
 @cli.command('phylogeny')

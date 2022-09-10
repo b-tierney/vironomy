@@ -169,8 +169,6 @@ class queryset:
 			self.fulltaxinfo_secondary = self.fulltaxinfo_secondary.loc[:,cols]
 			self.fulltaxinfo_secondary.to_csv(self.outputdir + '/secondary_clustering_taxonomic_report.csv')
 		print('<<<<<< CLASSIFICATION FINISHED >>>>>>>')
-		print('<<<<<< Output files are stored in %s >>>>>>>'%(self.outputdir))
-
 
 
 

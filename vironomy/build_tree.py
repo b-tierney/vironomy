@@ -170,7 +170,6 @@ class treebuild:
 			print('		Largest tree has %s genomes'%max(lengths))
 
 	def parallel_hmm_hunting(self,i):
-		print(i)
 		t = self.finaltrees[i]
 		treeid = 'tree_'+str(i)
 		mergedsub = self.full_hmm_matrix.loc[t,:]
@@ -188,19 +187,24 @@ class treebuild:
 			temp = pd.DataFrame.from_dict(temp,orient='index')
 			hmms_for_alignment.append(i)
 			if len(temp[temp<(self.min_marker_overlap_for_tree+1)].dropna().index) == 0:
-				return([treeid,mergedsub.loc[:,hmms_for_alignment],hmms_for_alignment])
+				return([treeid,mergedsub.loc[:,hmms_for_alignment],hmms_for_alignment,t])
 
 	def find_tree_specific_hmms(self):
 		print('	Finding minimum set of HMMs for alignment.')
 		self.metadata_sharedhmms = {}
 		self.hmms_to_align = {}
+		self.alignmentcontigs = {}
 		pool = Pool(self.threads)                         
 		treeout = pool.map(self.parallel_hmm_hunting, range(0,len(self.finaltrees))) 
 		pool.close()
 		for t in treeout:
 			self.metadata_sharedhmms[t[0]] = t[1]
+			self.alignmentcontigs[t[0]] = t[3]
 			self.hmms_to_align[t[0]] = t[2]
 		return(self.metadata_sharedhmms)
+
+	def parallel_hmmwrite(self,info):
+		pass
 
 	def prep_for_alignment(self):
 		allhmms = [j for i in self.hmms_to_align.values() for j in i]
@@ -222,31 +226,40 @@ class treebuild:
 		queryannos = queryannos.drop_duplicates(['contigid',1])
 		queryannos = queryannos[queryannos.iloc[:,0].isin(allhmms)]
 		self.alignpaths=[]
-		for t in self.hmms_to_align.keys():
-			treeconfig = self.hmms_to_align[t]
-			os.system('mkdir -p %s/%s'%(self.tmpdir,t))
-			for hmm in treeconfig:
-				outdirhmm = self.tmpdir + '/' + t + '/' + hmm + '.fa'
-				self.alignpaths.append(outdirhmm)
-				# get the genes with the domain
-				querygenes = list(set(list(queryannos[queryannos.iloc[:,0] == hmm].index)))
+		hmmcontig = {}
+		fullhmmlist = [self.hmms_to_align[x] for x in self.hmms_to_align.keys()]
+		trees = list(self.hmms_to_align.keys())
+		treeconfig = list(set([item for sublist in fullhmmlist for item in sublist]))
+		os.system('mkdir -p %s/alignments'%(self.tmpdir))
+		for hmm in treeconfig:
+			temp = []
+			outdirhmm = self.tmpdir + '/' + 'alignments' + '/' + hmm + '.fa'
+			self.alignpaths.append(outdirhmm)
+			# get the genes with the domain
+			querygenes = list(set(list(queryannos[queryannos.iloc[:,0] == hmm].index)))
+			if self.treetype == 'placement':
+				refgenes = list(set(list(genbankannos[genbankannos.iloc[:,0] == hmm].index)))
+			with open(outdirhmm,'w') as w:
+				for q in querygenes:
+					seqidq = '>' + q
+					seqq = queryorfs_loaded[q].seq
+					w.write('.'.join(seqidq.split('.')[:-1]) + '_query' + '\n')
+					w.write(str(seqq) + '\n')
+					temp.append('.'.join(seqidq.split('.')[:-1])+ '_query')
 				if self.treetype == 'placement':
-					refgenes = list(set(list(genbankannos[genbankannos.iloc[:,0] == hmm].index)))
-				self.alignmentcontigs = []
-				with open(outdirhmm,'w') as w:
-					for q in querygenes:
-						seqidq = '>' + q
-						seqq = queryorfs_loaded[q].seq
-						w.write('.'.join(seqidq.split('.')[:-1]) + '_query' + '\n')
-						w.write(str(seqq) + '\n')
-						self.alignmentcontigs.append('.'.join(seqidq.split('.')[:-1]) + '_query')
-					if self.treetype == 'placement':
-						for r in refgenes:
-							seqidr = '>' + r
-							seqr = genbankorfs_loaded[r].seq
-							w.write('.'.join(seqidr.split('.')[:-1])+ '_reference' + '\n')
-							w.write(str(seqr) + '\n')
-							self.alignmentcontigs.append('.'.join(seqidr.split('.')[:-1])+ '_reference')
+					for r in refgenes:
+						seqidr = '>' + r
+						seqr = genbankorfs_loaded[r].seq
+						w.write('.'.join(seqidr.split('.')[:-1])+ '_reference' + '\n')
+						w.write(str(seqr) + '\n')
+						temp.append('.'.join(seqidr.split('.')[:-1])+ '_reference')
+			hmmcontig[hmm] = temp
+		self.alignmentcontigs = {}
+		for t in trees:
+			hmms = self.hmms_to_align[t]
+			contigs = [hmmcontig[x] for x in hmms]
+			contigs = list(set([item for sublist in contigs for item in sublist]))
+			self.alignmentcontigs[t] = contigs
 		print('	All genes have been written to file and we are ready to run alignments.')
 
 	def generate_msas(self):
@@ -254,27 +267,28 @@ class treebuild:
 		with open(self.tmpdir + '/orflocs','w') as w:
 			for line in self.alignpaths:
 				w.write(line + '\n')
-		os.system('cat %s | parallel -j 1 famsa {} {}.aligned 2>/dev/null'%(self.tmpdir + '/orflocs'))
+		os.system('cat %s | parallel -j %s famsa {} {}.aligned &>/dev/null'%(self.tmpdir + '/orflocs',self.threads))
 		print('	Trimming alignments')
-		os.system('cat %s | parallel -j 1 trimal -in {}.aligned -out {}.aligned.trimmed -gt .3 -cons 50 2>/dev/null'%(self.tmpdir + '/orflocs'))
+		os.system('cat %s | parallel -j %s trimal -in {}.aligned -out {}.aligned.trimmed -gt .3 -cons 50 &>/dev/null'%(self.tmpdir + '/orflocs',self.threads))
 		print('	Alignments done')
 
 	def combine_msas(self):
 		print('	Merging MSAs into a single file for each viral genome.')
 		# load in each msa and create a key for contig id
-		for t in self.hmms_to_align.keys(): 
+		files = os.listdir('%s/alignments'%(self.tmpdir))
+		files = [self.tmpdir + '/alignments/' + x for x in files if '.aligned.trimmed' in x]
+		msas = []
+		for f in files:
+			hmm = f.split('/')[-1].replace('.fa.aligned.trimmed','')
+			msa = SeqIO.to_dict(SeqIO.parse(str(f), "fasta"))
+			msalen = len(msa[list(msa.keys())[0]])
+			msas.append([hmm,msa,msalen])
+		for t in self.alignmentcontigs.keys(): 
 			aligndir = self.tmpdir + '/' + t
-			files = os.listdir(aligndir) 
-			files = [aligndir + '/' + x for x in files if '.aligned.trimmed' in x]
-			msas = []
-			for f in files:
-				hmm = f.split('/')[-1].replace('.fa.aligned.trimmed','')
-				msa = SeqIO.to_dict(SeqIO.parse(str(f), "fasta"))
-				msalen = len(msa[list(msa.keys())[0]])
-				msas.append([hmm,msa,msalen])
-
+			os.system('mkdir -p %s'%aligndir)
+			contigs = self.alignmentcontigs[t]
 			with open(aligndir + '/contig_alignment_all_hmms.msa','w') as w:
-				for c in self.alignmentcontigs:
+				for c in contigs:
 					alignment = ''
 					for m in msas:
 						try:
@@ -300,7 +314,7 @@ class treebuild:
 				treefiles.append([treepath + '.iqtree','iqtree'])
 			if self.tree_algorithm == 'fasttree':
 				os.system("export OMP_NUM_THREADS=%s"%self.threads)
-				os.system("fasttree %s > %s.fasttree.tree"%(fullalignment,treepath))
+				os.system("fasttree %s > %s.fasttree.tree &> %s/treelog"%(fullalignment,treepath,self.tmpdir))
 				treefiles.append([treepath + '.fasttree.tree','fasttree'])
 			if self.tree_algorithm == 'RAxML':
 				os.system("")
