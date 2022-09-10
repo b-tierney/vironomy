@@ -3,8 +3,8 @@
 #SBATCH --job-name=vironomy_treebuild
 #SBATCH --output=logs/vironomy_treebuild_%A_%a.log
 #SBATCH --time=1-11:59:00 
-#SBATCH --mem=32G 
-#SBATCH --cpus-per-task=12 
+#SBATCH --mem=128G 
+#SBATCH --cpus-per-task=24
 #SBATCH --partition=panda_physbio 
 
 samplefile=$1
@@ -13,7 +13,7 @@ treealgorithm=$(cat  $samplefile | cut -f2 |sed -n "${SLURM_ARRAY_TASK_ID}p")
 alignmentloc=$(cat  $samplefile | cut -f3 |sed -n "${SLURM_ARRAY_TASK_ID}p")
 treeoutloc=$(cat  $samplefile | cut -f4 |sed -n "${SLURM_ARRAY_TASK_ID}p")
 
-threads=12 ### CHANGE THREADS HERE TOO
+threads=24 ### CHANGE THREADS HERE TOO
 
 mkdir -p logs
 mkdir -p $treeoutloc
