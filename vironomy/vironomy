@@ -118,7 +118,7 @@ def phylogeny(classifyout,batch,force,runmode,dbdir,max_nodes_per_query,min_mark
 		treebuilder.find_potential_nodes()
 		treebuilder.winnow_nodes_and_split_trees()
 	metadata_hmmcontent = treebuilder.find_tree_specific_hmms()
-	treebuilder.prep_for_alignment()
+	trees = treebuilder.prep_for_alignment()
 	treebuilder.generate_msas()
 	treebuilder.combine_msas()
 	treebuilder.build_tree(trees)

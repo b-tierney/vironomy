@@ -205,9 +205,6 @@ class treebuild:
 			self.hmms_to_align[t[0]] = t[2]
 		return(self.metadata_sharedhmms)
 
-	def parallel_hmmwrite(self,info):
-		pass
-
 	def prep_for_alignment(self):
 		allhmms = [j for i in self.hmms_to_align.values() for j in i]
 		genbankorfs_sub={}
@@ -312,11 +309,12 @@ class treebuild:
 		#	pipe = '>/dev/null'
 		for t in trees:
 			fullalignment = self.tmpdir + '/' + t + '/contig_alignment_all_hmms.msa'
-			treepath = self.outdir + '/' + t + '/' + t
+			treepath = self.outdir + '/' + t + '/'
 			if self.batch:
 				treeslurm.append([t,self.tree_algorithm,fullalignment,treepath])
 			if not self.batch:
 				print('		%s'%t)
+				treepath = self.outdir + '/' + t + '/' t
 				os.system('mkdir -p %s'%(self.outdir + '/' + t + '/'))
 				if self.tree_algorithm == 'iqtree':
 					os.system("iqtree -s %s --prefix %s -m MFP --seqtype AA -T %s &>> %s/treelog"%(fullalignment,treepath,self.threads,self.tmpdir))
