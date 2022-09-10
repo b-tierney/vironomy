@@ -309,14 +309,14 @@ class treebuild:
 		treefiles = []
 		pipe = ''
 		#if self.verbose == False:
-	#		pipe = '>/dev/null'
+		#	pipe = '>/dev/null'
 		for t in trees:
-			print('		%s'%t)
 			fullalignment = self.tmpdir + '/' + t + '/contig_alignment_all_hmms.msa'
 			treepath = self.outdir + '/' + t + '/' + t
 			if self.batch:
 				treeslurm.append([t,self.tree_algorithm,fullalignment,treepath])
 			if not self.batch:
+				print('		%s'%t)
 				os.system('mkdir -p %s'%(self.outdir + '/' + t + '/'))
 				if self.tree_algorithm == 'iqtree':
 					os.system("iqtree -s %s --prefix %s -m MFP --seqtype AA -T %s &>> %s/treelog"%(fullalignment,treepath,self.threads,self.tmpdir))
