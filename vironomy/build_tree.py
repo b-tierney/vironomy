@@ -13,7 +13,7 @@ import tqdm
 
 class treebuild:
 
-	def __init__(self,taxmap,distances,query_markermatrix,ref_markermatrix,treetype,max_nodes_per_query,min_marker_overlap_with_query,min_marker_overlap_for_tree,genbankannos,genbankorfs,queryorfs,queryannos,tree_algorithm,tmpdir,outdir,threads,bootstrapnum):
+	def __init__(self,taxmap,force,batch,distances,query_markermatrix,ref_markermatrix,treetype,max_nodes_per_query,min_marker_overlap_with_query,min_marker_overlap_for_tree,genbankannos,genbankorfs,queryorfs,queryannos,tree_algorithm,tmpdir,outdir,threads,bootstrapnum):
 		self.treetype = treetype
 		self.taxmap = taxmap
 		self.distances = distances
@@ -29,6 +29,8 @@ class treebuild:
 		self.tree_algorithm = tree_algorithm
 		self.tmpdir = tmpdir
 		self.outdir = outdir
+		self.force = force
+		self.batch = batch
 		self.threads = threads
 		self.bootstrapnum = bootstrapnum
 		os.system('mkdir -p %s'%self.tmpdir)
@@ -261,6 +263,7 @@ class treebuild:
 			contigs = list(set([item for sublist in contigs for item in sublist]))
 			self.alignmentcontigs[t] = contigs
 		print('	All genes have been written to file and we are ready to run alignments.')
+		return(trees)
 
 	def generate_msas(self):
 		print('	Running alignments')
@@ -298,26 +301,38 @@ class treebuild:
 					w.write(c + '\n')
 					w.write(str(alignment) + '\n')
 
-	def build_tree(self):
+	def build_tree(self,trees):
 		print('	Trees will be built with %s.'%(self.tree_algorithm))
+		if self.batch:
+			treeslurm = []
+			print('	Generating slurm config instead of running trees serially.')
 		treefiles = []
 		pipe = ''
 		#if self.verbose == False:
 	#		pipe = '>/dev/null'
-		for t in self.hmms_to_align.keys():
-			print('		Building %s'%t)
+		for t in trees:
+			print('		%s'%t)
 			fullalignment = self.tmpdir + '/' + t + '/contig_alignment_all_hmms.msa'
 			treepath = self.outdir + '/' + t + '/' + t
-			os.system('mkdir -p %s'%(self.outdir + '/' + t + '/'))
-			if self.tree_algorithm == 'iqtree':
-				os.system("iqtree -s %s --prefix %s -m MFP --seqtype AA -T %s &> %s/treelog"%(fullalignment,treepath,self.threads,self.tmpdir))
-				treefiles.append([treepath + '.iqtree','iqtree'])
-			if self.tree_algorithm == 'fasttree':
-				os.system("export OMP_NUM_THREADS=%s"%self.threads)
-				os.system("fasttree %s > %s.fasttree.tree &> %s/treelog"%(fullalignment,treepath,self.tmpdir))
-				treefiles.append([treepath + '.fasttree.tree','fasttree'])
-			if self.tree_algorithm == 'RAxML':
-				os.system("")
-			print('		Finished tree')
-		print('<<<<<< COMPLETED ALL TREE CONSTRUCTION >>>>>>>')
-		return(treefiles)
+			if self.batch:
+				treeslurm.append([t,self.tree_algorithm,fullalignment,treepath])
+			if not self.batch:
+				os.system('mkdir -p %s'%(self.outdir + '/' + t + '/'))
+				if self.tree_algorithm == 'iqtree':
+					os.system("iqtree -s %s --prefix %s -m MFP --seqtype AA -T %s &>> %s/treelog"%(fullalignment,treepath,self.threads,self.tmpdir))
+					treefiles.append([treepath + '.iqtree','iqtree'])
+				if self.tree_algorithm == 'fasttree':
+					os.system("export OMP_NUM_THREADS=%s"%self.threads)
+					os.system("fasttree %s > %s.fasttree.tree &>> %s/treelog"%(fullalignment,treepath,self.tmpdir))
+					treefiles.append([treepath + '.fasttree.tree','fasttree'])
+				#if self.tree_algorithm == 'RAxML':
+				#	os.system("")
+				print('		Finished tree')
+		if self.batch:
+			outfile="%s/slurm_config_treebuild"%self.outdir
+			with open(outfile,'w') as w:
+				for line in treeslurm:
+					w.write('\t'.join(line) + '\n')
+			print('	Tree batch config file written to %s'%(outfile))
+		if not self.batch:
+			print('<<<<<< COMPLETED ALL TREE CONSTRUCTION >>>>>>>')
