@@ -316,7 +316,7 @@ class treebuild:
 				treeslurm.append([t,self.tree_algorithm,fullalignment,treepath])
 			if not self.batch:
 				print('		%s'%t)
-				treepath = self.outdir + '/' + t + '/' t
+				treepath = self.outdir + '/' + t + '/' + t
 				os.system('mkdir -p %s'%(self.outdir + '/' + t + '/'))
 				if self.tree_algorithm == 'iqtree':
 					os.system("iqtree -s %s --prefix %s -m MFP --seqtype AA -T %s &>> %s/treelog"%(fullalignment,treepath,self.threads,self.tmpdir))
