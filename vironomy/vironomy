@@ -10,6 +10,7 @@ from Bio import SeqIO
 from vironomy.build_tree import treebuild
 from vironomy.classify import queryset
 import click
+import pickle
 
 ### next dev tasks
 
@@ -66,9 +67,9 @@ def classify(inputs,dbdir,outputdir,hitstoreport,subcluster,evaluecutoff,threads
 		data.secondary_classification()
 	data.parse_taxonomy()
 	print('	Writing distance matrix and query hmm presence/absence matrix to file.')
-	distances.to_csv(outputdir + '/pairwise_distances.csv')
-	markermatrix.to_csv(outputdir + '/query_markers.csv')
-	print('<<<<<< Output files are stored in %s >>>>>>>'%(self.outputdir))
+	distances.to_pickle(outputdir + '/pairwise_distances.pickle')
+	markermatrix.to_pickle(outputdir + '/query_markers.pickle')
+	print('<<<<<< Output files are stored in %s >>>>>>>'%(outputdir))
 
 	return([markermatrix,distances])
 
@@ -88,9 +89,9 @@ def classify(inputs,dbdir,outputdir,hitstoreport,subcluster,evaluecutoff,threads
 #@click.option('-v','--verbose', is_flag=True, Show lots of tree building output?')
 def phylogeny(classifyout,batch,force,runmode,dbdir,max_nodes_per_query,min_marker_overlap_with_query,min_marker_overlap_for_tree,tree_algorithm,tmpdir,threads,outputdir,distances = None, markermatrix = None):
 	if distances is None:
-		distances = pd.read_csv(classifyout + '/pairwise_distances.csv',index_col=0)
+		distances = pd.read_pickle(classifyout + '/pairwise_distances.pickle',index_col=0)
 	if markermatrix is None:
-		markermatrix = pd.read_csv(classifyout + '/query_markers.csv',index_col=0)
+		markermatrix = pd.read_pickle(classifyout + '/query_markers.pickle',index_col=0)
 	fulldb = dbdir + '/full_sc_marker_db.csv'
 	taxmap = dbdir + '/group_taxid_contigid_mapping_annotation_data.tsv'
 	genbankannos = dbdir + '/genbank_pfam_tgirfam_all_annotations_sc.txt'
@@ -112,13 +113,17 @@ def phylogeny(classifyout,batch,force,runmode,dbdir,max_nodes_per_query,min_mark
 	if runmode == 'de_novo':
 		print('	Running de novo tree construction.')
 		treebuilder.initialize_denovo_tree()
-		treebuilder.split_denovo_tree()
+		fullmarkermatrix = treebuilder.split_denovo_tree()
 	else:
 		print('	Placing genomes with genbank references.')
 		treebuilder.find_potential_nodes()
-		treebuilder.winnow_nodes_and_split_trees()
+		fullmarkermatrix = treebuilder.winnow_nodes_and_split_trees()
 	metadata_hmmcontent = treebuilder.find_tree_specific_hmms()
-	trees = treebuilder.prep_for_alignment()
+	trees,tree_contig_mapping = treebuilder.prep_for_alignment()
+	# pickle the tree contig mapping dict for later
+	with open(outputdir + '/tree_contig_mappingdict.pickle', 'wb') as handle:
+	    pickle.dump(tree_contig_mapping, handle, protocol=pickle.HIGHEST_PROTOCOL)
+	fullmarkermatrix.to_pickle(outputdir + '/fullmarkermatrix.pickle')
 	treebuilder.generate_msas()
 	treebuilder.combine_msas()
 	treebuilder.build_tree(trees)

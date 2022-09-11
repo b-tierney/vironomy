@@ -99,6 +99,7 @@ class treebuild:
 		self.full_hmm_matrix = merged
 		self.queries = queries
 		print('	Going to generate a total of %s tree(s) based on your provided parameters.'%len(self.finaltrees))
+		return(self.full_hmm_matrix)
 
 	def winnow(self,i):
 		query = self.distances_individual.iloc[i,:].name
@@ -170,6 +171,7 @@ class treebuild:
 		if len(lengths)>1:
 			print('		Smallest tree has %s genomes'%min(lengths))
 			print('		Largest tree has %s genomes'%max(lengths))
+		return(self.full_hmm_matrix)
 
 	def parallel_hmm_hunting(self,i):
 		t = self.finaltrees[i]
@@ -260,7 +262,7 @@ class treebuild:
 			contigs = list(set([item for sublist in contigs for item in sublist]))
 			self.alignmentcontigs[t] = contigs
 		print('	All genes have been written to file and we are ready to run alignments.')
-		return(trees)
+		return([trees,self.alignmentcontigs])
 
 	def generate_msas(self):
 		print('	Running alignments')
