@@ -4,7 +4,7 @@
 #SBATCH --output=logs/vironomy_treebuild_%A_%a.log
 #SBATCH --time=1-11:59:00 
 #SBATCH --mem=128G 
-#SBATCH --cpus-per-task=24
+#SBATCH --cpus-per-task=12
 #SBATCH --partition=panda_physbio 
 
 samplefile=$1
@@ -20,7 +20,7 @@ mkdir -p $treeoutloc
 
 if [[ "$treealgorithm" == "fasttree" ]]; then
 	export OMP_NUM_THREADS=$threads
-	fasttree $alignmentloc > "$treeoutloc".fasttree.tree
+	FastTreeMP $alignmentloc > "$treeoutloc".fasttree.tree
 fi
 
 if [[ "$treealgorithm" == "iqtree" ]]; then

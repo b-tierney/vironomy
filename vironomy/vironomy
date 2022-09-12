@@ -109,12 +109,11 @@ def phylogeny(classifyout,batch,force,runmode,dbdir,max_nodes_per_query,min_mark
 			print('	Found merged aligments for %s trees: using those instead of regenerating. Run with --force to change this behavior.'%len(alignments))		
 			trees = [x.split('/')[-2] for x in alignments]
 			treebuilder.build_tree(trees)
-		return
 	if runmode == 'de_novo':
 		print('	Running de novo tree construction.')
 		treebuilder.initialize_denovo_tree()
 		fullmarkermatrix = treebuilder.split_denovo_tree()
-	else:
+	if runmode == 'placement':
 		print('	Placing genomes with genbank references.')
 		treebuilder.find_potential_nodes()
 		fullmarkermatrix = treebuilder.winnow_nodes_and_split_trees()
