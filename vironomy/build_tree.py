@@ -99,13 +99,13 @@ class treebuild:
 			self.finaltrees = finaltrees
 		else:
 			self.finaltrees = [list(set(list(merged.index)))]
-		short = [x for x in self.finaltrees if len(x)<3]
+		short = [x for x in self.finaltrees if len(x)<self.smallesttreesize]
 		if len(short) == len(self.finaltrees):
 			print('None of your trees have enough genomes! Try reducing the required number of overlapping HMMs.')
 			quit()
 		if len(short) < len(self.finaltrees) and len(short) != 0:
 			print('%s trees have fewer than %s genomes and will not be generated.'%(len(short),self.smallesttreesize))
-		self.finaltrees = [x for x in self.finaltrees if len(x)>=3]
+		self.finaltrees = [x for x in self.finaltrees if len(x)>=self.smallesttreesize]
 		self.full_hmm_matrix = merged
 		self.queries = queries
 		print('	Going to generate a total of %s tree(s) based on your provided parameters.'%len(self.finaltrees))
@@ -154,6 +154,8 @@ class treebuild:
 					finaltrees.append(t)
 				if len(queriesleft) == 0:	
 					break
+		#	if len(queriesleft)!=0:
+		#		print('Note -- %s of your queries are going to be dropped because they were on trees that were too small and are not closely related enough to other organisms to be included in larger ones. Adjust your overlap/treesize parameter if this is not what you want.'%len(queriesleft))
 			self.finaltrees = finaltrees
 		else:
 			self.finaltrees = [list(set(list(merged.index)))]
@@ -163,7 +165,7 @@ class treebuild:
 			quit()
 		if len(short) < len(self.finaltrees) and len(short) != 0:
 			print('	%s trees have fewer than %s genomes and will not be generated.'%(len(short),self.smallesttreesize))
-		self.finaltrees = [x for x in self.finaltrees if len(x)>=3]
+		self.finaltrees = [x for x in self.finaltrees if len(x)>=self.smallesttreesize]
 		self.full_hmm_matrix = merged
 		self.queries = queries
 		lengths =[len(x) for x in self.finaltrees]
