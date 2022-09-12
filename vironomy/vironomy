@@ -89,9 +89,9 @@ def classify(inputs,dbdir,outputdir,hitstoreport,subcluster,evaluecutoff,threads
 #@click.option('-v','--verbose', is_flag=True, Show lots of tree building output?')
 def phylogeny(classifyout,batch,force,runmode,dbdir,max_nodes_per_query,min_marker_overlap_with_query,min_marker_overlap_for_tree,tree_algorithm,tmpdir,threads,outputdir,distances = None, markermatrix = None):
 	if distances is None:
-		distances = pd.read_pickle(classifyout + '/pairwise_distances.pickle',index_col=0)
+		distances = pd.read_pickle(classifyout + '/pairwise_distances.pickle')
 	if markermatrix is None:
-		markermatrix = pd.read_pickle(classifyout + '/query_markers.pickle',index_col=0)
+		markermatrix = pd.read_pickle(classifyout + '/query_markers.pickle')
 	fulldb = dbdir + '/full_sc_marker_db.csv'
 	taxmap = dbdir + '/group_taxid_contigid_mapping_annotation_data.tsv'
 	genbankannos = dbdir + '/genbank_pfam_tgirfam_all_annotations_sc.txt'
