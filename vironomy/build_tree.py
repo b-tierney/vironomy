@@ -58,6 +58,16 @@ class treebuild:
 		self.distances_individual.columns = self.query_markermatrix.index
 		self.distances_individual.index = self.query_markermatrix.index
 
+	def generate_treelist(self,info):
+		q = info[0]
+		querydist = info[1]
+		if len(querydist.loc[q].shape)>1:
+			querydist_sub = querydist.loc[q].sum()
+		else:
+			querydist_sub = querydist.loc[q]
+		potentialtree = list(querydist_sub[querydist_sub>0].index)
+		return(potentialtree)
+
 	def split_denovo_tree(self):
 		merged = self.query_markermatrix
 		# split into separate trees if necessary
@@ -68,19 +78,18 @@ class treebuild:
 			querydist[querydist<self.min_marker_overlap_for_tree]=0
 			querydist[querydist!=0]=1
 			treelist = []
-			for q in querydist.index:
-				if len(querydist.loc[q].shape)==2:
-					querydist_sub = querydist.loc[q].sum()
-				else:
-					querydist_sub = querydist.loc[q]
-				potentialtree = list(querydist_sub[querydist_sub>0].index)
-				treelist.append(potentialtree)
+			pool = Pool(self.threads)                         
+			treelist = pool.map(self.generate_treelist, [[x,querydist] for x in querydist.index]) 
+			pool.close()
 			treelist.sort()
 			treelist = list(treelist for treelist,_ in itertools.groupby(treelist))
 			treelist.reverse()
-			queriesleft = queries
+			print('	Identified %s potential trees, filtering them down.'%len(treelist))
+			queriesleft = list(set(queries))
 			finaltrees = []
-			for t in treelist:
+			treeoptions = pd.DataFrame([treelist,[len(list(set(x) & set(queriesleft))) for x in treelist],[len(x) for x in treelist]]).T
+			treelistsorted = list(treeoptions.sort_values([1,2],ascending=False)[0])
+			for t in treelistsorted:
 				done = list(set(t).intersection(set(queriesleft)))
 				queriesleft = set(queriesleft) - set(done)
 				if len(done)>0:
@@ -108,16 +117,6 @@ class treebuild:
 		matches = queryseries.eq(self.refdb).sum(axis=1)
 		return(list(matches[matches>=self.min_marker_overlap_with_query].index))
 
-	def generate_treelist(self,info):
-		q = info[0]
-		querydist = info[1]
-		if len(querydist.loc[q].shape)==2:
-			querydist_sub = querydist.loc[q].sum()
-		else:
-			querydist_sub = querydist.loc[q]
-		potentialtree = list(querydist_sub[querydist_sub>0].index)
-		return(potentialtree)
-
 	def winnow_nodes_and_split_trees(self):
 		print('	Winnowing nodes based on hmm overlap using %s thread(s).'%self.threads)
 		# for each query, filter comparator nodes based on hmm overlap and find maximal set of reference contigs
@@ -136,19 +135,19 @@ class treebuild:
 		if(self.min_marker_overlap_for_tree>0):
 			queries = list(set(list(self.query_markermatrix.index)))
 			overlaps = merged.dot(merged.T)
-			querydist = overlaps.loc[queries,:]
-			querydist[querydist<self.min_marker_overlap_for_tree]=0
-			querydist[querydist!=0]=1
+			overlaps[overlaps<self.min_marker_overlap_for_tree]=0
+			overlaps[overlaps!=0]=1
 			treelist = []
 			pool = Pool(self.threads)                         
-			treelist = pool.map(self.generate_treelist, [[x,querydist] for x in querydist.index]) 
+			treelist = pool.map(self.generate_treelist, [[x,overlaps] for x in overlaps.index]) 
 			pool.close()
-			treelist.sort()
 			treelist = list(treelist for treelist,_ in itertools.groupby(treelist))
-			treelist.reverse()
-			queriesleft = queries
+			print('	Identified %s potential trees, filtering them down.'%len(treelist))
+			queriesleft = list(set(queries))
 			finaltrees = []
-			for t in treelist:
+			treeoptions = pd.DataFrame([treelist,[len(list(set(x) & set(queriesleft))) for x in treelist],[len(x) for x in treelist]]).T
+			treelistsorted = list(treeoptions.sort_values([1,2],ascending=False)[0])
+			for t in treelistsorted:
 				done = list(set(t).intersection(set(queriesleft)))
 				queriesleft = set(queriesleft) - set(done)
 				if len(done)>0:
@@ -280,12 +279,12 @@ class treebuild:
 		# load in each msa and create a key for contig id
 		files = os.listdir('%s/alignments'%(self.tmpdir))
 		files = [self.tmpdir + '/alignments/' + x for x in files if '.aligned.trimmed' in x]
-		msas = []
+		msas = {}
 		for f in files:
 			hmm = f.split('/')[-1].replace('.fa.aligned.trimmed','')
 			msa = SeqIO.to_dict(SeqIO.parse(str(f), "fasta"))
 			msalen = len(msa[list(msa.keys())[0]])
-			msas.append([hmm,msa,msalen])
+			msas[hmm] = [msa,msalen]
 		for t in self.alignmentcontigs.keys(): 
 			aligndir = self.tmpdir + '/' + t
 			os.system('mkdir -p %s'%aligndir)
@@ -293,11 +292,13 @@ class treebuild:
 			with open(aligndir + '/contig_alignment_all_hmms.msa','w') as w:
 				for c in contigs:
 					alignment = ''
-					for m in msas:
+					hmms_contig = self.hmms_to_align[t]
+					for val in hmms_contig:
+						m = msas[val]
 						try:
-							alignment = alignment + str(m[1][c[1:]].seq)
+							alignment = alignment + str(m[0][c[1:]].seq)
 						except:
-							alignment = alignment + '-'*int(m[2])
+							alignment = alignment + '-'*int(m[1])
 					w.write(c + '\n')
 					w.write(str(alignment) + '\n')
 
