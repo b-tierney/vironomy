@@ -13,8 +13,9 @@ import tqdm
 
 class treebuild:
 
-	def __init__(self,taxmap,force,batch,distances,query_markermatrix,ref_markermatrix,treetype,max_nodes_per_query,min_marker_overlap_with_query,min_marker_overlap_for_tree,genbankannos,genbankorfs,queryorfs,queryannos,tree_algorithm,tmpdir,outdir,threads,bootstrapnum):
+	def __init__(self,smallesttreesize,taxmap,force,batch,distances,query_markermatrix,ref_markermatrix,treetype,max_nodes_per_query,min_marker_overlap_with_query,min_marker_overlap_for_tree,genbankannos,genbankorfs,queryorfs,queryannos,tree_algorithm,tmpdir,outdir,threads,bootstrapnum):
 		self.treetype = treetype
+		self.smallesttreesize = smallesttreesize
 		self.taxmap = taxmap
 		self.distances = distances
 		self.max_nodes_per_query = max_nodes_per_query
@@ -157,7 +158,7 @@ class treebuild:
 			self.finaltrees = finaltrees
 		else:
 			self.finaltrees = [list(set(list(merged.index)))]
-		short = [x for x in self.finaltrees if len(x)<3]
+		short = [x for x in self.finaltrees if len(x)<self.smallesttreesize]
 		if len(short) == len(self.finaltrees):
 			print('	None of your trees have enough genomes! Try reducing the required number of overlapping HMMs (-f).')
 			quit()
@@ -319,11 +320,11 @@ class treebuild:
 				treepath = self.outdir + '/' + t + '/' + t
 				os.system('mkdir -p %s'%(self.outdir + '/' + t + '/'))
 				if self.tree_algorithm == 'iqtree':
-					os.system("iqtree -s %s --prefix %s -m MFP --seqtype AA -T %s &>> %s/treelog"%(fullalignment,treepath,self.threads,self.tmpdir))
+					os.system("iqtree -s %s --prefix %s -m MFP --seqtype AA -T %s 2>> %s/treelog"%(fullalignment,treepath,self.threads,self.tmpdir))
 					treefiles.append([treepath + '.iqtree','iqtree'])
 				if self.tree_algorithm == 'fasttree':
 					os.system("export OMP_NUM_THREADS=%s"%self.threads)
-					os.system("fasttree %s > %s.fasttree.tree &>> %s/treelog"%(fullalignment,treepath,self.tmpdir))
+					os.system("fasttree %s > %s.fasttree.tree"%(fullalignment,treepath,self.tmpdir))
 					treefiles.append([treepath + '.fasttree.tree','fasttree'])
 				#if self.tree_algorithm == 'RAxML':
 				#	os.system("")
