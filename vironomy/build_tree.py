@@ -271,7 +271,7 @@ class treebuild:
 		with open(self.tmpdir + '/orflocs','w') as w:
 			for line in self.alignpaths:
 				w.write(line + '\n')
-		os.system('cat %s | parallel -j %s famsa {} {}.aligned &>/dev/null'%(self.tmpdir + '/orflocs',self.threads))
+		os.system('cat %s | parallel -j %s famsa -t 1 {} {}.aligned &>/dev/null'%(self.tmpdir + '/orflocs',self.threads))
 		print('	Trimming alignments')
 		os.system('cat %s | parallel -j %s trimal -in {}.aligned -out {}.aligned.trimmed -gt .3 -cons 50 &>/dev/null'%(self.tmpdir + '/orflocs',self.threads))
 		print('	Alignments done')
