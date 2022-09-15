@@ -4,6 +4,7 @@ from Bio import SeqIO
 import pandas as pd
 import os
 import math
+from threading import Thread, Event
 
 def import_queries(fastafile):
 	print("		Loading query data.")
@@ -57,6 +58,3 @@ def split_fasta(sequencedata,threads,outdir):
 		for line in outnames:
 			w.write(line + '\n')
 	return(outdir + '/splitfilelocs')
-
-def check_dependencies():
-	pass

@@ -10,6 +10,9 @@ from Bio import SeqIO
 from sklearn.metrics.pairwise import pairwise_distances
 from multiprocessing import Pool
 import tqdm
+from threading import Thread, Event
+import time
+import subprocess
 
 class treebuild:
 
@@ -47,6 +50,11 @@ class treebuild:
 			groupstoload.extend(queryline.nsmallest(n = self.max_nodes_per_query).index)
 		taxatoload = list(self.taxmap[self.taxmap['group'].isin([int(x) for x in groupstoload])].genbank_contigid)
 		self.refdb = import_full_db(taxatoload,self.ref_markermatrix)
+		#print(self.refdb)
+		#self.refdb = self.refdb[self.refdb.columns[self.refdb.sum()>=3]]
+		#self.query_markermatrix = self.query_markermatrix[self.query_markermatrix.columns[self.query_markermatrix.sum()>=3]]
+		#print(self.refdb)
+		#print(self.query_markermatrix)
 		print('	Finding potential nodes to include')
 		self.distances_individual = pd.DataFrame(pairwise_distances(self.query_markermatrix,self.refdb,n_jobs = self.threads))
 		self.distances_individual.columns = self.refdb.index
@@ -266,12 +274,35 @@ class treebuild:
 		print('	All genes have been written to file and we are ready to run alignments.')
 		return([trees,self.alignmentcontigs])
 
+	def paralign(self,i):
+		print(i)
+		os.system('famsa -keep-duplicates -t %s %s %s.aligned'%(self.threads,i,i))
+
+	def check_alignment_output(self):
+		todo=[]
+		for line in self.alignpaths:
+			if not os.path.exists("%s.aligned"%line):
+				todo.append(line)
+		return(todo)
+
 	def generate_msas(self):
 		print('	Running alignments')
 		with open(self.tmpdir + '/orflocs','w') as w:
 			for line in self.alignpaths:
 				w.write(line + '\n')
-		os.system('cat %s | parallel -j %s famsa -t 1 {} {}.aligned &>/dev/null'%(self.tmpdir + '/orflocs',self.threads))
+		#maxtime = len(self.alignpaths)*60*10
+		#while True:
+		#	todo = self.check_alignment_output()
+		#	print(todo)
+		#	if len(todo) == 0:
+		#		break
+		#	pool = Pool(self.threads)
+		#	pool.map(self.paralign, todo) 
+		#	pool.close()
+		for file in self.alignpaths:
+			self.paralign(file)
+		#os.system('while read p; do echo $p; famsa -t %s "$p" "$p".aligned;done<%s'%(self.threads,self.tmpdir + '/orflocs'))
+		#os.system('cat %s | parallel -j %s famsa -t 1 {} {}.aligned &>/dev/null'%(self.tmpdir + '/orflocs',self.threads))
 		print('	Trimming alignments')
 		os.system('cat %s | parallel -j %s trimal -in {}.aligned -out {}.aligned.trimmed -gt .3 -cons 50 &>/dev/null'%(self.tmpdir + '/orflocs',self.threads))
 		print('	Alignments done')
