@@ -80,6 +80,7 @@ vironomy phylogeny -c /path/to/classify/output/directory -d /path/to/databases
 | --min_marker_overlap_with_query |  -q  | Minimum number of overlapping HMMs between a query its identified references [Default = 1]. | No |
 | --min_marker_overlap_for_tree |  -f  |  Minimum number of overlapping HMMs that must be shared between viral genomes for them to be placed on the same tree. [Default = 1]| No |
 |  --threads  |  -p  | Number of CPU threads to use [Default = 1]. | No |
+|  --smallesttreesize  |  -u  | Trees must include greater than or equal to this number of genomes/contigs. Note that trees smaller than this size -- even if they have queries on them -- will be dropped! [Default = 3]. | No |
 |  --tmpdir  |  -t  | Name of classification temporary directory [Default = tmp]. | No |
 |  --force  |  -f  | Overwrite existing output files (e.g., ORF calling, alignments). | No |
 | --batch | -b | Instead of running trees, output a file formatted for slurm job submissision using the file scripts/build_tree.slurm.| No |
