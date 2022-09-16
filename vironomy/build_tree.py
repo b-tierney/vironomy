@@ -16,10 +16,11 @@ import subprocess
 
 class treebuild:
 
-	def __init__(self,smallesttreesize,taxmap,force,batch,distances,query_markermatrix,ref_markermatrix,treetype,max_nodes_per_query,min_marker_overlap_with_query,min_marker_overlap_for_tree,genbankannos,genbankorfs,queryorfs,queryannos,tree_algorithm,tmpdir,outdir,threads,bootstrapnum):
+	def __init__(self,min_hmm_prevalence,smallesttreesize,taxmap,force,batch,distances,query_markermatrix,ref_markermatrix,treetype,max_nodes_per_query,min_marker_overlap_with_query,min_marker_overlap_for_tree,genbankannos,genbankorfs,queryorfs,queryannos,tree_algorithm,tmpdir,outdir,threads,bootstrapnum):
 		self.treetype = treetype
 		self.smallesttreesize = smallesttreesize
 		self.taxmap = taxmap
+		self.min_hmm_prevalence = min_hmm_prevalence
 		self.distances = distances
 		self.max_nodes_per_query = max_nodes_per_query
 		self.query_markermatrix = query_markermatrix
@@ -78,6 +79,10 @@ class treebuild:
 
 	def split_denovo_tree(self):
 		merged = self.query_markermatrix
+		# remove hmms with too low a prevalence
+		print(merged)
+		merged = merged[merged.columns[merged.sum()>=self.min_hmm_prevalence]]
+		print("	Building trees with a total of possible %s HMMs."%merged.shape[1])
 		# split into separate trees if necessary
 		if(self.min_marker_overlap_for_tree>0):
 			queries = list(set(list(self.query_markermatrix.index)))
@@ -138,6 +143,8 @@ class treebuild:
 		self.referencecontigsall = tokeep
 		refdb_sub[refdb_sub == -1] = 0
 		merged = pd.concat([refdb_sub,self.query_markermatrix])
+		merged = merged[merged.columns[merged.sum()>=self.min_hmm_prevalence]]
+		print("	Building trees with a total of possible %s HMMs."%merged.shape[1])
 		# split into separate trees if necessary
 		print('	Finding optimal trees.')
 		if(self.min_marker_overlap_for_tree>0):
@@ -174,6 +181,8 @@ class treebuild:
 		if len(short) < len(self.finaltrees) and len(short) != 0:
 			print('	%s trees have fewer than %s genomes and will not be generated.'%(len(short),self.smallesttreesize))
 		self.finaltrees = [x for x in self.finaltrees if len(x)>=self.smallesttreesize]
+		colvals = [x.replace("'",'_') for x in list(merged.columns)]
+		merged.columns = colvals
 		self.full_hmm_matrix = merged
 		self.queries = queries
 		lengths =[len(x) for x in self.finaltrees]
@@ -219,6 +228,7 @@ class treebuild:
 
 	def prep_for_alignment(self):
 		allhmms = [j for i in self.hmms_to_align.values() for j in i]
+		allhmms = [x.replace("'","_") for x in allhmms]
 		genbankorfs_sub={}
 		print('	Loading sequence data in preparation for alignment.')
 		if self.treetype == 'placement':
@@ -228,6 +238,8 @@ class treebuild:
 			genbankannos['contigid'] = (genbankannos).index.str.rsplit('.', n=1).str[0]
 			genbankannos = genbankannos[genbankannos['contigid'].isin(self.referencecontigsall)]
 			genbankannos = genbankannos.drop_duplicates(['contigid',1])
+			hmmvals = [x.replace("'","_") for x in genbankannos.iloc[:,0]]
+			genbankannos.iloc[:,0] = hmmvals
 			genbankannos = genbankannos[genbankannos.iloc[:,0].isin(allhmms)]
 		# load in and subset the query orfs 
 		queryorfs_loaded = SeqIO.to_dict(SeqIO.parse(str(self.queryorfs), "fasta"))
@@ -235,6 +247,8 @@ class treebuild:
 		queryannos['contigid'] = (queryannos).index.str.rsplit('.', n=1).str[0]
 		queryannos = queryannos[queryannos['contigid'].isin(self.queries)]
 		queryannos = queryannos.drop_duplicates(['contigid',1])
+		hmmvals = [x.replace("'","_") for x in queryannos.iloc[:,0]]
+		queryannos.iloc[:,0] = hmmvals
 		queryannos = queryannos[queryannos.iloc[:,0].isin(allhmms)]
 		self.alignpaths=[]
 		hmmcontig = {}
@@ -244,6 +258,7 @@ class treebuild:
 		os.system('mkdir -p %s/alignments'%(self.tmpdir))
 		for hmm in treeconfig:
 			temp = []
+			hmm = hmm.replace("'","_")
 			outdirhmm = self.tmpdir + '/' + 'alignments' + '/' + hmm + '.fa'
 			self.alignpaths.append(outdirhmm)
 			# get the genes with the domain
@@ -275,8 +290,8 @@ class treebuild:
 		return([trees,self.alignmentcontigs])
 
 	def paralign(self,i):
-		print(i)
-		os.system('famsa -keep-duplicates -t %s %s %s.aligned'%(self.threads,i,i))
+		#print("Computing alignment for %s"%i)
+		os.system('famsa -keep-duplicates -t %s %s %s.aligned &>/dev/null'%(self.threads,i,i))
 
 	def check_alignment_output(self):
 		todo=[]
@@ -315,6 +330,7 @@ class treebuild:
 		msas = {}
 		for f in files:
 			hmm = f.split('/')[-1].replace('.fa.aligned.trimmed','')
+			hmm = hmm.replace("'","_")
 			msa = SeqIO.to_dict(SeqIO.parse(str(f), "fasta"))
 			msalen = len(msa[list(msa.keys())[0]])
 			msas[hmm] = [msa,msalen]
@@ -358,8 +374,8 @@ class treebuild:
 					treefiles.append([treepath + '.iqtree','iqtree'])
 				if self.tree_algorithm == 'fasttree':
 					os.system("export OMP_NUM_THREADS=%s"%self.threads)
-					os.system("fasttree %s > %s.fasttree.tree"%(fullalignment,treepath,self.tmpdir))
-					treefiles.append([treepath + '.fasttree.tree','fasttree'])
+					os.system("fasttree %s > %s/fasttree.tree"%(fullalignment,treepath,self.tmpdir))
+					treefiles.append([treepath + 'fasttree.tree','fasttree'])
 				#if self.tree_algorithm == 'RAxML':
 				#	os.system("")
 				print('		Finished tree')

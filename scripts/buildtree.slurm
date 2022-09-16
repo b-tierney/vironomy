@@ -3,7 +3,7 @@
 #SBATCH --job-name=vironomy_treebuild
 #SBATCH --output=logs/vironomy_treebuild_%A_%a.log
 #SBATCH --time=1-11:59:00 
-#SBATCH --mem=32G 
+#SBATCH --mem=164G 
 #SBATCH --cpus-per-task=12 
 #SBATCH --partition=panda_physbio 
 
