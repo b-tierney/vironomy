@@ -125,13 +125,51 @@ class treebuild:
 			finaltrees = []
 			treeoptions = pd.DataFrame([treelist,[len(list(set(x) & set(queriesleft))) for x in treelist],[len(x) for x in treelist]]).T
 			treelistsorted = list(treeoptions.sort_values([1,2],ascending=False)[0])
-			for t in treelistsorted:
-				done = list(set(t).intersection(set(queriesleft)))
+			if self.tree_sorting_mode=='distance':
+				seed = list(treelistsorted.loc[:,0])[0]
+				indval = list(treelistsorted['indval'])[0]
+				done = list(set(seed).intersection(set(queriesleft)))
 				queriesleft = set(queriesleft) - set(done)
-				if len(done)>0:
-					finaltrees.append(t)
-				if len(queriesleft) == 0:	
-					break
+				finaltrees.append(seed)
+				alltrees.extend(seed)
+				treeoptions = treeoptions[treeoptions.loc[:,'indval']!=indval]
+				while True:
+					if len(queriesleft) == 0:	
+						break
+					#pool = Pool(self.threads)
+					#inputlist = [[alltrees,x] for x in list(treeoptions[0])]
+					#jacout = pool.map(self.par_jaccard, inputlist) 
+					#pool.close()
+					#treeoptions[4] = jacout
+					#treeoptions[4] = [self.jaccard(alltrees,x) for x in list(treeoptions[0])]
+					treeoptions[1] = [len(list(set(queriesleft) & set(x))) for x in list(treeoptions[0])]
+					treeoptions = treeoptions[treeoptions[1]>0]
+					treelistsorted = treeoptions.sort_values([1,2],ascending=False)
+					#treelistsorted = treeoptions[treeoptions[4] < treeoptions[4].quantile(.25)].sort_values([1,2],ascending=False)
+					try:
+						t = list(treelistsorted[0])[0]
+						indval = list(treelistsorted.loc[:,'indval'])[0]
+						done = list(set(t).intersection(set(queriesleft)))
+						queriesleft = set(queriesleft) - set(done)
+					except:
+						print('%s queries are not going to placed on trees based on your provided parameters (e.g., they lack the requisite HMM overlaps). Going to write their IDs to a failed_trees.txt file in the output directory.')
+						queriesleft = list(queriesleft)
+						with open('%s/failed_trees.txt'%self.outdir,'w') as w:
+							for q in queriesleft:
+								w.write(q + '\n')
+						break
+					if len(done)>0:
+						finaltrees.append(t)
+						alltrees.extend(t)
+						treeoptions = treeoptions[treeoptions.loc[:,'indval']!=indval]
+			if self.tree_sorting_mode=='fast':				
+				for t in treelistsorted[0]:
+					done = list(set(t).intersection(set(queriesleft)))
+					queriesleft = set(queriesleft) - set(done)
+					if len(done)>0:
+						finaltrees.append(t)
+					if len(queriesleft) == 0:	
+						break
 			self.finaltrees = finaltrees
 		else:
 			self.finaltrees = [list(set(list(merged.index)))]
@@ -201,7 +239,6 @@ class treebuild:
 			finaltrees = []
 			alltrees = []	
 			treeoptions = pd.DataFrame([treelist,[len(list(set(x) & set(queriesleft))) for x in treelist],[len(x) for x in treelist],[(list(set(x) & set(queriesleft))) for x in treelist]]).T
-			treeoptions.to_csv('TEST.csv')
 			treeoptions=treeoptions[treeoptions[2]>0]
 			treeoptions['indval'] = treeoptions.index
 			treelistsorted = treeoptions.sort_values([1,2],ascending=False)
@@ -226,7 +263,6 @@ class treebuild:
 					treeoptions = treeoptions[treeoptions[1]>0]
 					treelistsorted = treeoptions.sort_values([1,2],ascending=False)
 					#treelistsorted = treeoptions[treeoptions[4] < treeoptions[4].quantile(.25)].sort_values([1,2],ascending=False)
-					treelistsorted.to_csv('anothertest.csv')
 					try:
 						t = list(treelistsorted[0])[0]
 						indval = list(treelistsorted.loc[:,'indval'])[0]
