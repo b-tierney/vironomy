@@ -33,7 +33,7 @@ class queryset:
 			sequencedata = import_queries(self.sequences)
 			chunklocs = split_fasta(sequencedata,self.threads,self.tmpdir)
 			os.system("cat %s | parallel -j %s 'phanotate.py -f fasta {} > {}.query_orfs.ffn'"%(chunklocs,self.threads))
-			os.system("cat %s/splitqueries/querychunk_*query_orfs.ffn > %s/query_orfs.ffn"%(self.tmpdir,self.tmpdir))
+			os.system("find %s/splitqueries/ -name *querychunk_*query_orfs.ffn | xargs cat > %s/query_orfs.ffn"%(self.tmpdir,self.tmpdir))
 		else:
 			os.system('phanotate.py -f fasta %s > %s/query_orfs.ffn'%(self.sequences,self.tmpdir))
 		os.system("transeq -sequence %s/query_orfs.ffn -outseq %s/query_orfs.faa &> /dev/null"%(self.tmpdir,self.outputdir))

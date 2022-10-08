@@ -16,7 +16,7 @@ import subprocess
 
 class treebuild:
 
-	def __init__(self,min_hmm_prevalence,smallesttreesize,taxmap,force,batch,distances,query_markermatrix,ref_markermatrix,treetype,max_nodes_per_query,min_marker_overlap_with_query,min_marker_overlap_for_tree,genbankannos,genbankorfs,queryorfs,queryannos,tree_algorithm,tmpdir,outdir,threads,bootstrapnum):
+	def __init__(self,tree_sorting_mode,min_hmm_prevalence,smallesttreesize,taxmap,force,batch,distances,query_markermatrix,ref_markermatrix,treetype,max_nodes_per_query,min_marker_overlap_with_query,min_marker_overlap_for_tree,genbankannos,genbankorfs,queryorfs,queryannos,tree_algorithm,tmpdir,outdir,threads,bootstrapnum):
 		self.treetype = treetype
 		self.smallesttreesize = smallesttreesize
 		self.taxmap = taxmap
@@ -38,6 +38,7 @@ class treebuild:
 		self.batch = batch
 		self.threads = threads
 		self.bootstrapnum = bootstrapnum
+		self.tree_sorting_mode = tree_sorting_mode
 		os.system('mkdir -p %s'%self.tmpdir)
 		os.system('mkdir -p %s'%self.outdir)
 		print('<<<<<< STARTING TREE CONSTRUCTION >>>>>>>')
@@ -77,11 +78,33 @@ class treebuild:
 		potentialtree = list(querydist_sub[querydist_sub>0].index)
 		return(potentialtree)
 
+	def filter_merged_matrix(self,mergedmat):
+		hmmsums = mergedmat.sum().sort_values(ascending=False)
+		inddict = {}
+		for q in mergedmat.index:
+			inddict[q] = 1 
+		outhmms = []
+		while len(inddict.keys())>0:
+			for h in hmmsums.index:
+				keep = False
+				qlist = list(set(mergedmat[mergedmat.loc[:,h]==1].index))
+				for q in qlist:
+					try:
+						inddict.pop(q)
+						keep = True
+					except:
+						continue
+				if keep:
+					outhmms.append(h)
+		mergedmat = mergedmat.loc[:,outhmms]
+		return(mergedmat)
+
 	def split_denovo_tree(self):
 		merged = self.query_markermatrix
 		# remove hmms with too low a prevalence
-		print(merged)
-		merged = merged[merged.columns[merged.sum()>=self.min_hmm_prevalence]]
+		#print(merged)
+		merged = self.filter_merged_matrix(merged)
+		#merged = merged[merged.columns[merged.sum()>=self.min_hmm_prevalence]]
 		print("	Building trees with a total of possible %s HMMs."%merged.shape[1])
 		# split into separate trees if necessary
 		if(self.min_marker_overlap_for_tree>0):
@@ -130,6 +153,18 @@ class treebuild:
 		matches = queryseries.eq(self.refdb).sum(axis=1)
 		return(list(matches[matches>=self.min_marker_overlap_with_query].index))
 
+	def jaccard(self,list1,list2):
+		intersection = len(list(set(list1).intersection(list2)))
+		union = (len(list1) + len(list2)) - intersection
+		return(1 - (float(intersection) / union))
+
+	def par_jaccard(self,lists):
+		list1 = lists[0]
+		list2 = lists[1]
+		intersection = len(list(set(list1).intersection(list2)))
+		union = (len(list1) + len(list2)) - intersection
+		return(1 - (float(intersection) / union))
+
 	def winnow_nodes_and_split_trees(self):
 		print('	Winnowing nodes based on hmm overlap using %s thread(s).'%self.threads)
 		# for each query, filter comparator nodes based on hmm overlap and find maximal set of reference contigs
@@ -143,7 +178,8 @@ class treebuild:
 		self.referencecontigsall = tokeep
 		refdb_sub[refdb_sub == -1] = 0
 		merged = pd.concat([refdb_sub,self.query_markermatrix])
-		merged = merged[merged.columns[merged.sum()>=self.min_hmm_prevalence]]
+		merged = self.filter_merged_matrix(merged)
+		#merged = merged[merged.columns[merged.sum()>=self.min_hmm_prevalence]]
 		print("	Building trees with a total of possible %s HMMs."%merged.shape[1])
 		# split into separate trees if necessary
 		print('	Finding optimal trees.')
@@ -159,18 +195,62 @@ class treebuild:
 			treelist = list(treelist for treelist,_ in itertools.groupby(treelist))
 			print('	Identified %s potential trees, filtering them down.'%len(treelist))
 			queriesleft = list(set(queries))
+			with open('test','w') as w:
+				for q in queriesleft:
+					w.write(q+'\n')
 			finaltrees = []
-			treeoptions = pd.DataFrame([treelist,[len(list(set(x) & set(queriesleft))) for x in treelist],[len(x) for x in treelist]]).T
-			treelistsorted = list(treeoptions.sort_values([1,2],ascending=False)[0])
-			for t in treelistsorted:
-				done = list(set(t).intersection(set(queriesleft)))
+			alltrees = []	
+			treeoptions = pd.DataFrame([treelist,[len(list(set(x) & set(queriesleft))) for x in treelist],[len(x) for x in treelist],[(list(set(x) & set(queriesleft))) for x in treelist]]).T
+			treeoptions.to_csv('TEST.csv')
+			treeoptions=treeoptions[treeoptions[2]>0]
+			treeoptions['indval'] = treeoptions.index
+			treelistsorted = treeoptions.sort_values([1,2],ascending=False)
+			if self.tree_sorting_mode=='distance':
+				seed = list(treelistsorted.loc[:,0])[0]
+				indval = list(treelistsorted['indval'])[0]
+				done = list(set(seed).intersection(set(queriesleft)))
 				queriesleft = set(queriesleft) - set(done)
-				if len(done)>0:
-					finaltrees.append(t)
-				if len(queriesleft) == 0:	
-					break
-		#	if len(queriesleft)!=0:
-		#		print('Note -- %s of your queries are going to be dropped because they were on trees that were too small and are not closely related enough to other organisms to be included in larger ones. Adjust your overlap/treesize parameter if this is not what you want.'%len(queriesleft))
+				finaltrees.append(seed)
+				alltrees.extend(seed)
+				treeoptions = treeoptions[treeoptions.loc[:,'indval']!=indval]
+				while True:
+					if len(queriesleft) == 0:	
+						break
+					#pool = Pool(self.threads)
+					#inputlist = [[alltrees,x] for x in list(treeoptions[0])]
+					#jacout = pool.map(self.par_jaccard, inputlist) 
+					#pool.close()
+					#treeoptions[4] = jacout
+					#treeoptions[4] = [self.jaccard(alltrees,x) for x in list(treeoptions[0])]
+					treeoptions[1] = [len(list(set(queriesleft) & set(x))) for x in list(treeoptions[0])]
+					treeoptions = treeoptions[treeoptions[1]>0]
+					treelistsorted = treeoptions.sort_values([1,2],ascending=False)
+					#treelistsorted = treeoptions[treeoptions[4] < treeoptions[4].quantile(.25)].sort_values([1,2],ascending=False)
+					treelistsorted.to_csv('anothertest.csv')
+					try:
+						t = list(treelistsorted[0])[0]
+						indval = list(treelistsorted.loc[:,'indval'])[0]
+						done = list(set(t).intersection(set(queriesleft)))
+						queriesleft = set(queriesleft) - set(done)
+					except:
+						print('%s queries are not going to placed on trees based on your provided parameters (e.g., they lack the requisite HMM overlaps). Going to write their IDs to a failed_trees.txt file in the output directory.')
+						queriesleft = list(queriesleft)
+						with open('%s/failed_trees.txt'%self.outdir,'w') as w:
+							for q in queriesleft:
+								w.write(q + '\n')
+						break
+					if len(done)>0:
+						finaltrees.append(t)
+						alltrees.extend(t)
+						treeoptions = treeoptions[treeoptions.loc[:,'indval']!=indval]
+			if self.tree_sorting_mode=='fast':				
+				for t in treelistsorted[0]:
+					done = list(set(t).intersection(set(queriesleft)))
+					queriesleft = set(queriesleft) - set(done)
+					if len(done)>0:
+						finaltrees.append(t)
+					if len(queriesleft) == 0:	
+						break
 			self.finaltrees = finaltrees
 		else:
 			self.finaltrees = [list(set(list(merged.index)))]
