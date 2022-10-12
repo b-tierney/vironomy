@@ -102,13 +102,13 @@ class treebuild:
 	def split_denovo_tree(self):
 		merged = self.query_markermatrix
 		# remove hmms with too low a prevalence
-		#print(merged)
 		merged = self.filter_merged_matrix(merged)
+		print(merged.shape)
 		#merged = merged[merged.columns[merged.sum()>=self.min_hmm_prevalence]]
 		print("	Building trees with a total of possible %s HMMs."%merged.shape[1])
 		# split into separate trees if necessary
+		queries = list(set(list(self.query_markermatrix.index)))
 		if(self.min_marker_overlap_for_tree>0):
-			queries = list(set(list(self.query_markermatrix.index)))
 			overlaps = merged.dot(merged.T)
 			querydist = overlaps.loc[queries,:]
 			querydist[querydist<self.min_marker_overlap_for_tree]=0
@@ -123,8 +123,11 @@ class treebuild:
 			print('	Identified %s potential trees, filtering them down.'%len(treelist))
 			queriesleft = list(set(queries))
 			finaltrees = []
-			treeoptions = pd.DataFrame([treelist,[len(list(set(x) & set(queriesleft))) for x in treelist],[len(x) for x in treelist]]).T
-			treelistsorted = list(treeoptions.sort_values([1,2],ascending=False)[0])
+			alltrees = []	
+			treeoptions = pd.DataFrame([treelist,[len(list(set(x) & set(queriesleft))) for x in treelist],[len(x) for x in treelist],[(list(set(x) & set(queriesleft))) for x in treelist]]).T
+			treeoptions=treeoptions[treeoptions[2]>0]
+			treeoptions['indval'] = treeoptions.index
+			treelistsorted = treeoptions.sort_values([1,2],ascending=False)
 			if self.tree_sorting_mode=='distance':
 				seed = list(treelistsorted.loc[:,0])[0]
 				indval = list(treelistsorted['indval'])[0]
@@ -136,12 +139,6 @@ class treebuild:
 				while True:
 					if len(queriesleft) == 0:	
 						break
-					#pool = Pool(self.threads)
-					#inputlist = [[alltrees,x] for x in list(treeoptions[0])]
-					#jacout = pool.map(self.par_jaccard, inputlist) 
-					#pool.close()
-					#treeoptions[4] = jacout
-					#treeoptions[4] = [self.jaccard(alltrees,x) for x in list(treeoptions[0])]
 					treeoptions[1] = [len(list(set(queriesleft) & set(x))) for x in list(treeoptions[0])]
 					treeoptions = treeoptions[treeoptions[1]>0]
 					treelistsorted = treeoptions.sort_values([1,2],ascending=False)
@@ -215,14 +212,16 @@ class treebuild:
 		refdb_sub  = self.refdb.loc[tokeep,:]
 		self.referencecontigsall = tokeep
 		refdb_sub[refdb_sub == -1] = 0
+		print(self.query_markermatrix.shape)
+		print(refdb_sub)
 		merged = pd.concat([refdb_sub,self.query_markermatrix])
 		merged = self.filter_merged_matrix(merged)
 		#merged = merged[merged.columns[merged.sum()>=self.min_hmm_prevalence]]
 		print("	Building trees with a total of possible %s HMMs."%merged.shape[1])
 		# split into separate trees if necessary
 		print('	Finding optimal trees.')
+		queries = list(set(list(self.query_markermatrix.index)))
 		if(self.min_marker_overlap_for_tree>0):
-			queries = list(set(list(self.query_markermatrix.index)))
 			overlaps = merged.dot(merged.T)
 			overlaps[overlaps<self.min_marker_overlap_for_tree]=0
 			overlaps[overlaps!=0]=1
@@ -233,9 +232,6 @@ class treebuild:
 			treelist = list(treelist for treelist,_ in itertools.groupby(treelist))
 			print('	Identified %s potential trees, filtering them down.'%len(treelist))
 			queriesleft = list(set(queries))
-			with open('test','w') as w:
-				for q in queriesleft:
-					w.write(q+'\n')
 			finaltrees = []
 			alltrees = []	
 			treeoptions = pd.DataFrame([treelist,[len(list(set(x) & set(queriesleft))) for x in treelist],[len(x) for x in treelist],[(list(set(x) & set(queriesleft))) for x in treelist]]).T
@@ -311,6 +307,7 @@ class treebuild:
 	def parallel_hmm_hunting(self,i):
 		t = self.finaltrees[i]
 		treeid = 'tree_'+str(i)
+		mergedsubtemp = self.full_hmm_matrix.loc[t,:]
 		mergedsub = self.full_hmm_matrix.loc[t,:]
 		sums = mergedsub.sum()
 		tokeep = sums[sums>0].sort_values(ascending=False).index
@@ -318,15 +315,29 @@ class treebuild:
 		contigcoverage = []
 		hmms_for_alignment=[]
 		contigcoverage.extend(list(set(list(mergedsub.index))))
-		for i in mergedsub.columns:
+		while True:
+			i=mergedsub.columns[0]
 			col = mergedsub.loc[:,i]
+			mergedsub = mergedsub.drop(i,axis=1)
 			col = col[col>0].index
 			contigcoverage.extend(list(col))
 			temp = Counter(contigcoverage)
 			temp = pd.DataFrame.from_dict(temp,orient='index')
 			hmms_for_alignment.append(i)
-			if len(temp[temp<(self.min_marker_overlap_for_tree+1)].dropna().index) == 0:
-				return([treeid,mergedsub.loc[:,hmms_for_alignment],hmms_for_alignment,t])
+			if self.min_marker_overlap_for_tree == 0 :
+				stopping = 1 
+			else:
+				stopping = self.min_marker_overlap_for_tree
+			complete = temp[temp>=(stopping)].dropna().index
+			mergedsub = mergedsub.drop(complete)
+			if mergedsub.shape[0]==0:
+				break
+			if mergesub.shape[1]==0:
+				break
+			sums = mergedsub.sum()
+			tokeep = sums[sums>0].sort_values(ascending=False).index
+			mergedsub = mergedsub.loc[:,tokeep]
+		return([treeid,mergedsubtemp.loc[:,hmms_for_alignment],hmms_for_alignment,t])
 
 	def find_tree_specific_hmms(self):
 		print('	Finding minimum set of HMMs for alignment.')
