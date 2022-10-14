@@ -96,6 +96,8 @@ class treebuild:
 						continue
 				if keep:
 					outhmms.append(h)
+				if h == hmmsums.index[-1]:
+					break
 		mergedmat = mergedmat.loc[:,outhmms]
 		return(mergedmat)
 
@@ -212,11 +214,9 @@ class treebuild:
 		refdb_sub  = self.refdb.loc[tokeep,:]
 		self.referencecontigsall = tokeep
 		refdb_sub[refdb_sub == -1] = 0
-		print(self.query_markermatrix.shape)
-		print(refdb_sub)
 		merged = pd.concat([refdb_sub,self.query_markermatrix])
+		merged.to_csv('TEST.csv')
 		merged = self.filter_merged_matrix(merged)
-		#merged = merged[merged.columns[merged.sum()>=self.min_hmm_prevalence]]
 		print("	Building trees with a total of possible %s HMMs."%merged.shape[1])
 		# split into separate trees if necessary
 		print('	Finding optimal trees.')
@@ -307,11 +307,16 @@ class treebuild:
 	def parallel_hmm_hunting(self,i):
 		t = self.finaltrees[i]
 		treeid = 'tree_'+str(i)
-		mergedsubtemp = self.full_hmm_matrix.loc[t,:]
 		mergedsub = self.full_hmm_matrix.loc[t,:]
 		sums = mergedsub.sum()
-		tokeep = sums[sums>0].sort_values(ascending=False).index
+		tokeep = sums[sums>self.min_hmm_prevalence].sort_values(ascending=False).index
 		mergedsub = mergedsub.loc[:,tokeep]
+		lost = mergedsub[mergedsub.sum(axis=1)==0].index
+		mergedsub = mergedsub.drop(lost)
+		mergedsubtemp = mergedsub
+		with open('%s/%s_lost_queries_due_to_failing_hmm_overlap.txt'%(self.tmpdir,treeid),'w') as w:
+			for q in list(lost):
+				w.write(q + '\n')
 		contigcoverage = []
 		hmms_for_alignment=[]
 		contigcoverage.extend(list(set(list(mergedsub.index))))
@@ -324,27 +329,27 @@ class treebuild:
 			temp = Counter(contigcoverage)
 			temp = pd.DataFrame.from_dict(temp,orient='index')
 			hmms_for_alignment.append(i)
-			if self.min_marker_overlap_for_tree == 0 :
+			if int(self.min_marker_overlap_for_tree) == 0:
 				stopping = 1 
 			else:
 				stopping = self.min_marker_overlap_for_tree
-			complete = temp[temp>=(stopping)].dropna().index
-			mergedsub = mergedsub.drop(complete)
+			complete = temp[temp>=(stopping+1)].dropna().index
+			mergedsub = mergedsub.drop(set(complete) & set(mergedsub.index))
 			if mergedsub.shape[0]==0:
 				break
-			if mergesub.shape[1]==0:
+			if mergedsub.shape[1]==0:
 				break
 			sums = mergedsub.sum()
 			tokeep = sums[sums>0].sort_values(ascending=False).index
 			mergedsub = mergedsub.loc[:,tokeep]
-		return([treeid,mergedsubtemp.loc[:,hmms_for_alignment],hmms_for_alignment,t])
+		return([treeid,mergedsubtemp.loc[:,hmms_for_alignment],hmms_for_alignment,mergedsubtemp.index])
 
 	def find_tree_specific_hmms(self):
 		print('	Finding minimum set of HMMs for alignment.')
 		self.metadata_sharedhmms = {}
 		self.hmms_to_align = {}
 		self.alignmentcontigs = {}
-		pool = Pool(self.threads)                         
+		pool = Pool(self.threads)  
 		treeout = pool.map(self.parallel_hmm_hunting, range(0,len(self.finaltrees))) 
 		pool.close()
 		for t in treeout:
