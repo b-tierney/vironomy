@@ -424,11 +424,12 @@ class treebuild:
 	def paralign(self,i):
 		#print("Computing alignment for %s"%i)
 		os.system('famsa -keep-duplicates -t %s %s %s.aligned &>/dev/null'%(self.threads,i,i))
+		os.system('echo "COMPLETE" > %s.check'%(i))
 
 	def check_alignment_output(self):
 		todo=[]
 		for line in self.alignpaths:
-			if not os.path.exists("%s.aligned"%line):
+			if not os.path.exists("%s.check"%line):
 				todo.append(line)
 		return(todo)
 
@@ -446,8 +447,13 @@ class treebuild:
 		#	pool = Pool(self.threads)
 		#	pool.map(self.paralign, todo) 
 		#	pool.close()
-		for file in self.alignpaths:
-			self.paralign(file)
+		while True:
+			todo = self.check_alignment_output()
+			print(todo)
+			if len(todo) == 0:
+				break
+			for file in self.alignpaths:
+				self.paralign(file)
 		#os.system('while read p; do echo $p; famsa -t %s "$p" "$p".aligned;done<%s'%(self.threads,self.tmpdir + '/orflocs'))
 		#os.system('cat %s | parallel -j %s famsa -t 1 {} {}.aligned &>/dev/null'%(self.tmpdir + '/orflocs',self.threads))
 		print('	Trimming alignments')
