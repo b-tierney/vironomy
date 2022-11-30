@@ -145,7 +145,5 @@ dependencies:
     - twine==4.0.1
     - typing-extensions==4.3.0
     - urllib3==1.26.12
-    - vironomy==0.1.0
     - webencodings==0.5.1
     - zipp==3.8.1
-prefix: /home/btt4001/miniconda3/envs/vironomy
