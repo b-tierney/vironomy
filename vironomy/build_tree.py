@@ -447,14 +447,14 @@ class treebuild:
 		#	pool = Pool(self.threads)
 		#	pool.map(self.paralign, todo) 
 		#	pool.close()
-		while True:
-			todo = self.check_alignment_output()
-			print(todo)
-			if len(todo) == 0:
-				break
-			for file in self.alignpaths:
-				self.paralign(file)
-		#os.system('while read p; do echo $p; famsa -t %s "$p" "$p".aligned;done<%s'%(self.threads,self.tmpdir + '/orflocs'))
+		#while True:
+		#	todo = self.check_alignment_output()
+		#	print(todo)
+		#	if len(todo) == 0:
+		#		break
+		#	for file in self.alignpaths:
+		#		self.paralign(file)
+		os.system('while read p; do echo $p; famsa -t %s "$p" "$p".aligned;done<%s'%(self.threads,self.tmpdir + '/orflocs'))
 		#os.system('cat %s | parallel -j %s famsa -t 1 {} {}.aligned &>/dev/null'%(self.tmpdir + '/orflocs',self.threads))
 		print('	Trimming alignments')
 		os.system('cat %s | parallel -j %s trimal -in {}.aligned -out {}.aligned.trimmed -gt .3 -cons 50 &>/dev/null'%(self.tmpdir + '/orflocs',self.threads))
