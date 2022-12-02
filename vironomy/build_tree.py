@@ -352,6 +352,8 @@ class treebuild:
 		pool = Pool(self.threads)  
 		treeout = pool.map(self.parallel_hmm_hunting, range(0,len(self.finaltrees))) 
 		pool.close()
+		with open('TEST.pickle', 'wb') as handle:
+    			pickle.dump(treeout[0], handle, protocol=pickle.HIGHEST_PROTOCOL)
 		for t in treeout:
 			self.metadata_sharedhmms[t[0]] = t[1]
 			self.alignmentcontigs[t[0]] = t[3]
