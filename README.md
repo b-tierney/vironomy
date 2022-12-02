@@ -32,6 +32,8 @@ pip install .
 
 You can now call ```vironomy``` to see the top-level commands.
 
+Before running the package type ```parallel --citation``` to ensure that GNU parallel runs properly. Also, make sure you cite it!!!
+
 ## Databases
 
 Vironomy uses marker databases based on GenBank's viral genome collection. To set them up in a directory of your choosing, run:
