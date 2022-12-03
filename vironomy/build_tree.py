@@ -466,6 +466,7 @@ class treebuild:
 		files = os.listdir('%s/alignments'%(self.tmpdir))
 		files = [self.tmpdir + '/alignments/' + x for x in files if '.aligned.trimmed' in x]
 		msas = {}
+		os.system('sleep 5')
 		for f in files:
 			hmm = f.split('/')[-1].replace('.fa.aligned.trimmed','')
 			hmm = hmm.replace("'","_")
