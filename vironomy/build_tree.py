@@ -5,7 +5,6 @@ import os
 import pandas as pd 
 import scipy
 import itertools
-import pickle
 from collections import Counter
 from Bio import SeqIO
 from sklearn.metrics.pairwise import pairwise_distances
@@ -472,7 +471,7 @@ class treebuild:
 			hmm = hmm.replace("'","_")
 			msa = SeqIO.to_dict(SeqIO.parse(str(f), "fasta"))
 			msalen = len(msa[list(msa.keys())[0]])
-			msas[hmm] = [msa,msalen]	
+			msas[hmm] = [msa,msalen]
 		for t in self.alignmentcontigs.keys(): 
 			aligndir = self.tmpdir + '/' + t
 			os.system('mkdir -p %s'%aligndir)
