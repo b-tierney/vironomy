@@ -462,11 +462,17 @@ class treebuild:
 
 	def combine_msas(self):
 		print('	Merging MSAs into a single file for each viral genome.')
-		# load in each msa and create a key for contig id
+		# load in each msa and create a key for contig id	
 		files = os.listdir('%s/alignments'%(self.tmpdir))
 		files = [self.tmpdir + '/alignments/' + x for x in files if '.aligned.trimmed' in x]
+		print(files)
+		if len(files) == 0:
+			print('No alignments found, this might be an I/O issue -- trying again...')
+			os.system('sleep 15')
+			files = os.listdir('%s/alignments'%(self.tmpdir))
+			files = [self.tmpdir + '/alignments/' + x for x in files if '.aligned.trimmed' in x]
+			print(files)
 		msas = {}
-		os.system('sleep 5')
 		for f in files:
 			hmm = f.split('/')[-1].replace('.fa.aligned.trimmed','')
 			hmm = hmm.replace("'","_")
