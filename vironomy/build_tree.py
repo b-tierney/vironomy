@@ -353,8 +353,6 @@ class treebuild:
 		pool = Pool(self.threads)  
 		treeout = pool.map(self.parallel_hmm_hunting, range(0,len(self.finaltrees))) 
 		pool.close()
-		with open('TEST.pickle', 'wb') as handle:
-    			pickle.dump(treeout[0], handle, protocol=pickle.HIGHEST_PROTOCOL)
 		for t in treeout:
 			self.metadata_sharedhmms[t[0]] = t[1]
 			self.alignmentcontigs[t[0]] = t[3]
@@ -474,13 +472,7 @@ class treebuild:
 			hmm = hmm.replace("'","_")
 			msa = SeqIO.to_dict(SeqIO.parse(str(f), "fasta"))
 			msalen = len(msa[list(msa.keys())[0]])
-			msas[hmm] = [msa,msalen]
-		with open('alignmentcontigs.pickle', 'wb') as handle:
-    			pickle.dump(self.alignmentcontigs, handle, protocol=pickle.HIGHEST_PROTOCOL)
-		with open('hmmstoalign.pickle', 'wb') as handle:
-    			pickle.dump(self.hmms_to_align, handle, protocol=pickle.HIGHEST_PROTOCOL)
-		with open('msas.pickle', 'wb') as handle:
-    			pickle.dump(msas, handle, protocol=pickle.HIGHEST_PROTOCOL)		
+			msas[hmm] = [msa,msalen]	
 		for t in self.alignmentcontigs.keys(): 
 			aligndir = self.tmpdir + '/' + t
 			os.system('mkdir -p %s'%aligndir)
