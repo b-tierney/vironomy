@@ -265,6 +265,9 @@ class treebuild:
 					#treelistsorted = treeoptions[treeoptions[4] < treeoptions[4].quantile(.25)].sort_values([1,2],ascending=False)
 					try:
 						t = list(treelistsorted[0])[0]
+						#### ADD A LINE THAT CHECKS FOR QUERIES ALREADY COVERED
+						if self.non_redundant_trees == True:
+							t = [x for x in t if x not in done]
 						indval = list(treelistsorted.loc[:,'indval'])[0]
 						done = list(set(t).intersection(set(queriesleft)))
 						queriesleft = set(queriesleft) - set(done)
