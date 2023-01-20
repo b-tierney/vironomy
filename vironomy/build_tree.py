@@ -168,6 +168,8 @@ class treebuild:
 								w.write(q + '\n')
 						break
 					if len(done)>0:
+						if len(t) == 0:
+							continue
 						finaltrees.append(t)
 						alltrees.extend(t)
 						treeoptions = treeoptions[treeoptions.loc[:,'indval']!=indval]
