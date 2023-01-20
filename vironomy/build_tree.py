@@ -16,7 +16,7 @@ import subprocess
 
 class treebuild:
 
-	def __init__(self,tree_sorting_mode,min_hmm_prevalence,smallesttreesize,taxmap,force,batch,distances,query_markermatrix,ref_markermatrix,treetype,max_nodes_per_query,min_marker_overlap_with_query,min_marker_overlap_for_tree,genbankannos,genbankorfs,queryorfs,queryannos,tree_algorithm,tmpdir,outdir,threads,bootstrapnum):
+	def __init__(self,tree_sorting_mode,non_redundant_trees,min_hmm_prevalence,smallesttreesize,taxmap,force,batch,distances,query_markermatrix,ref_markermatrix,treetype,max_nodes_per_query,min_marker_overlap_with_query,min_marker_overlap_for_tree,genbankannos,genbankorfs,queryorfs,queryannos,tree_algorithm,tmpdir,outdir,threads,bootstrapnum):
 		self.treetype = treetype
 		self.smallesttreesize = smallesttreesize
 		self.taxmap = taxmap
@@ -39,6 +39,7 @@ class treebuild:
 		self.threads = threads
 		self.bootstrapnum = bootstrapnum
 		self.tree_sorting_mode = tree_sorting_mode
+		self.non_redundant_trees = non_redundant_trees
 		os.system('mkdir -p %s'%self.tmpdir)
 		os.system('mkdir -p %s'%self.outdir)
 		print('<<<<<< STARTING TREE CONSTRUCTION >>>>>>>')
@@ -147,6 +148,9 @@ class treebuild:
 					#treelistsorted = treeoptions[treeoptions[4] < treeoptions[4].quantile(.25)].sort_values([1,2],ascending=False)
 					try:
 						t = list(treelistsorted[0])[0]
+						#### ADD A LINE THAT CHECKS FOR QUERIES ALREADY COVERED
+						if self.non_redundant_trees == True:
+							t = [x for x in t if x not in done]
 						indval = list(treelistsorted.loc[:,'indval'])[0]
 						done = list(set(t).intersection(set(queriesleft)))
 						queriesleft = set(queriesleft) - set(done)
