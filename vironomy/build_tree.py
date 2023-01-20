@@ -322,6 +322,7 @@ class treebuild:
 
 	def parallel_hmm_hunting(self,i):
 		t = self.finaltrees[i]
+		print(len(t))
 		treeid = 'tree_'+str(i)
 		mergedsub = self.full_hmm_matrix.loc[t,:]
 		sums = mergedsub.sum()
