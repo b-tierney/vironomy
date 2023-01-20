@@ -128,6 +128,8 @@ class treebuild:
 			finaltrees = []
 			alltrees = []	
 			treeoptions = pd.DataFrame([treelist,[len(list(set(x) & set(queriesleft))) for x in treelist],[len(x) for x in treelist],[(list(set(x) & set(queriesleft))) for x in treelist]]).T
+			treeoptions.to_csv('testtreeoptions.csv')
+			pd.DataFrame(queriesleft).to_csv('queries.csv')
 			treeoptions=treeoptions[treeoptions[2]>0]
 			treeoptions['indval'] = treeoptions.index
 			treelistsorted = treeoptions.sort_values([1,2],ascending=False)
@@ -150,11 +152,7 @@ class treebuild:
 						t = list(treelistsorted[0])[0]
 						#### ADD A LINE THAT CHECKS FOR QUERIES ALREADY COVERED
 						if self.non_redundant_trees == True:
-							print('BEFORE')
-							print(t)
 							t = [x for x in t if x not in done]
-							print('AFTER')
-							print(t)
 							if len(t) == 0:
 								continue
 						indval = list(treelistsorted.loc[:,'indval'])[0]
