@@ -128,8 +128,6 @@ class treebuild:
 			finaltrees = []
 			alltrees = []	
 			treeoptions = pd.DataFrame([treelist,[len(list(set(x) & set(queriesleft))) for x in treelist],[len(x) for x in treelist],[(list(set(x) & set(queriesleft))) for x in treelist]]).T
-			treeoptions.to_csv('testtreeoptions.csv')
-			pd.DataFrame(queriesleft).to_csv('queries.csv')
 			treeoptions=treeoptions[treeoptions[2]>0]
 			treeoptions['indval'] = treeoptions.index
 			treelistsorted = treeoptions.sort_values([1,2],ascending=False)
@@ -151,11 +149,15 @@ class treebuild:
 					try:
 						t = list(treelistsorted[0])[0]
 						#### ADD A LINE THAT CHECKS FOR QUERIES ALREADY COVERED
-						if self.non_redundant_trees == True:
-							t = [x for x in t if x not in done]
-							if len(t) == 0:
-								continue
 						indval = list(treelistsorted.loc[:,'indval'])[0]
+						if self.non_redundant_trees == True:
+							print('here')
+							print(len(t))
+							t = [x for x in t if x not in done]
+							print(len(t))
+							if len(t) == 0:
+								treeoptions = treeoptions[treeoptions.loc[:,'indval']!=indval]
+								continue
 						done = list(set(t).intersection(set(queriesleft)))
 						queriesleft = set(queriesleft) - set(done)
 					except:
@@ -223,7 +225,6 @@ class treebuild:
 		self.referencecontigsall = tokeep
 		refdb_sub[refdb_sub == -1] = 0
 		merged = pd.concat([refdb_sub,self.query_markermatrix])
-		merged.to_csv('TEST.csv')
 		merged = self.filter_merged_matrix(merged)
 		print("	Building trees with a total of possible %s HMMs."%merged.shape[1])
 		# split into separate trees if necessary
