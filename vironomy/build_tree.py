@@ -151,6 +151,8 @@ class treebuild:
 						#### ADD A LINE THAT CHECKS FOR QUERIES ALREADY COVERED
 						if self.non_redundant_trees == True:
 							t = [x for x in t if x not in done]
+							if len(t) == 0:
+								continue
 						indval = list(treelistsorted.loc[:,'indval'])[0]
 						done = list(set(t).intersection(set(queriesleft)))
 						queriesleft = set(queriesleft) - set(done)
