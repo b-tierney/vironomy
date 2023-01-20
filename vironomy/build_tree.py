@@ -153,7 +153,7 @@ class treebuild:
 						if self.non_redundant_trees == True:
 							print('here')
 							print(len(t))
-							t = [x for x in t if x not in done]
+							t = [x for x in t if x in queriesleft]
 							print(len(t))
 							if len(t) == 0:
 								treeoptions = treeoptions[treeoptions.loc[:,'indval']!=indval]
@@ -274,7 +274,7 @@ class treebuild:
 						if self.non_redundant_trees == True:
 							print('BEFORE')
 							print(t)
-							t = [x for x in t if x not in done]
+							t = [x for x in t if x in queriesleft]
 							print('AFTER')
 							print(t)
 							if len(t) == 0:
