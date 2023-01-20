@@ -342,6 +342,9 @@ class treebuild:
 		with open('%s/%s_lost_queries_due_to_failing_hmm_overlap.txt'%(self.tmpdir,treeid),'w') as w:
 			for q in list(lost):
 				w.write(q + '\n')
+			if mergedsub.shape[0] == 0:
+				print('Dropping all rows for trees %s -- try changing -k or -h.'%i)
+				return None
 		contigcoverage = []
 		hmms_for_alignment=[]
 		contigcoverage.extend(list(set(list(mergedsub.index))))
@@ -378,9 +381,10 @@ class treebuild:
 		treeout = pool.map(self.parallel_hmm_hunting, range(0,len(self.finaltrees))) 
 		pool.close()
 		for t in treeout:
-			self.metadata_sharedhmms[t[0]] = t[1]
-			self.alignmentcontigs[t[0]] = t[3]
-			self.hmms_to_align[t[0]] = t[2]
+			if t is not None:
+				self.metadata_sharedhmms[t[0]] = t[1]
+				self.alignmentcontigs[t[0]] = t[3]
+				self.hmms_to_align[t[0]] = t[2]
 		return(self.metadata_sharedhmms)
 
 	def prep_for_alignment(self):
