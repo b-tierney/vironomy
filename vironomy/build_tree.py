@@ -151,10 +151,7 @@ class treebuild:
 						#### ADD A LINE THAT CHECKS FOR QUERIES ALREADY COVERED
 						indval = list(treelistsorted.loc[:,'indval'])[0]
 						if self.non_redundant_trees == True:
-							print('here')
-							print(len(t))
 							t = [x for x in t if x in queriesleft]
-							print(len(t))
 							if len(t) == 0:
 								treeoptions = treeoptions[treeoptions.loc[:,'indval']!=indval]
 								continue
@@ -275,14 +272,10 @@ class treebuild:
 					#treelistsorted = treeoptions[treeoptions[4] < treeoptions[4].quantile(.25)].sort_values([1,2],ascending=False)
 					try:
 						t = list(treelistsorted[0])[0]
-						#### ADD A LINE THAT CHECKS FOR QUERIES ALREADY COVERED
 						if self.non_redundant_trees == True:
-							print('BEFORE')
-							print(t)
 							t = [x for x in t if x in queriesleft]
-							print('AFTER')
-							print(t)
 							if len(t) == 0:
+								treeoptions = treeoptions[treeoptions.loc[:,'indval']!=indval]
 								continue
 						indval = list(treelistsorted.loc[:,'indval'])[0]
 						done = list(set(t).intersection(set(queriesleft)))
@@ -329,8 +322,6 @@ class treebuild:
 
 	def parallel_hmm_hunting(self,i):
 		t = self.finaltrees[i]
-		print(t)
-		print(len(t))
 		treeid = 'tree_'+str(i)
 		mergedsub = self.full_hmm_matrix.loc[t,:]
 		sums = mergedsub.sum()
