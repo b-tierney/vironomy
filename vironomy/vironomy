@@ -87,9 +87,10 @@ def classify(inputs,dbdir,outputdir,hitstoreport,subcluster,evaluecutoff,threads
 @click.option('-h','--min_hmm_prevalence', required = False, default = 1,help='Minimum number of genomes HMMs must be found in to be included in phylogenetic classification. [Default = 1]')
 @click.option('-f','--force', is_flag = True, help='Remake any existing ORF calling, HMM, or alignment files.')
 @click.option('-b','--batch', is_flag = True, help='Do not generate treefiles -- instead create a config file that can be run on a slurm submission system.')
+@click.option('-n','--non_redundant_trees', is_flag = True, help='Prevent viruses from appearing on multiple trees (relevant if k > 0).')
 @click.option('-z','--tree_sorting_mode', required = False, default = 'distance', help='distance or fast -- determines if you sort trees by size or by coverage of phylogenetic space [Default = distance].')
 #@click.option('-v','--verbose', is_flag=True, Show lots of tree building output?')
-def phylogeny(tree_sorting_mode,classifyout,min_hmm_prevalence,smallesttreesize,classification_filter,batch,force,runmode,dbdir,max_nodes_per_query,min_marker_overlap_with_query,min_marker_overlap_for_tree,tree_algorithm,tmpdir,threads,outputdir,distances = None, markermatrix = None):
+def phylogeny(tree_sorting_mode,non_redundant_trees,classifyout,min_hmm_prevalence,smallesttreesize,classification_filter,batch,force,runmode,dbdir,max_nodes_per_query,min_marker_overlap_with_query,min_marker_overlap_for_tree,tree_algorithm,tmpdir,threads,outputdir,distances = None, markermatrix = None):
 	if distances is None:
 		distances = pd.read_pickle(classifyout + '/pairwise_distances.pickle')
 	if markermatrix is None:
@@ -110,7 +111,7 @@ def phylogeny(tree_sorting_mode,classifyout,min_hmm_prevalence,smallesttreesize,
 	distances = distances.loc[filteredmarkers,:]
 	markermatrix = markermatrix.loc[filteredmarkers,:]
 	taxmap = pd.read_csv(taxmap,index_col=0,sep='\t')
-	treebuilder = treebuild(tree_sorting_mode=tree_sorting_mode,smallesttreesize = smallesttreesize,min_hmm_prevalence = min_hmm_prevalence,force=force,batch=batch, distances = distances,taxmap = taxmap, query_markermatrix = markermatrix,ref_markermatrix = fulldb,treetype = runmode,max_nodes_per_query = max_nodes_per_query,min_marker_overlap_with_query = min_marker_overlap_with_query, min_marker_overlap_for_tree = min_marker_overlap_for_tree,genbankannos = genbankannos,genbankorfs = genbankorfs,queryannos = queryannos,queryorfs = queryorfs,tree_algorithm = tree_algorithm,tmpdir = tmpdir,outdir = outputdir,threads = threads,bootstrapnum = 1000)
+	treebuilder = treebuild(tree_sorting_mode=tree_sorting_mode,non_redundant_trees = non_redundant_trees,smallesttreesize = smallesttreesize,min_hmm_prevalence = min_hmm_prevalence,force=force,batch=batch, distances = distances,taxmap = taxmap, query_markermatrix = markermatrix,ref_markermatrix = fulldb,treetype = runmode,max_nodes_per_query = max_nodes_per_query,min_marker_overlap_with_query = min_marker_overlap_with_query, min_marker_overlap_for_tree = min_marker_overlap_for_tree,genbankannos = genbankannos,genbankorfs = genbankorfs,queryannos = queryannos,queryorfs = queryorfs,tree_algorithm = tree_algorithm,tmpdir = tmpdir,outdir = outputdir,threads = threads,bootstrapnum = 1000)
 	if not force:
 		alignments = []
 		for root, dirs, files in os.walk(tmpdir):
@@ -158,12 +159,13 @@ def phylogeny(tree_sorting_mode,classifyout,min_hmm_prevalence,smallesttreesize,
 @click.option('-b','--batch', is_flag = True, help='Do not generate treefiles -- instead create a config file that can be run on a slurm submission system.')
 @click.option('-u','--smallesttreesize', required = False, default = 3,help='Min number of genomes that can be on a tree. [Default = 3]')
 @click.option('-h','--min_hmm_prevalence', required = False, default = 1,help='Minimum number of genomes HMMs must be found in to be included in phylogenetic classification. [Default = 1]')
+@click.option('-n','--non_redundant_trees', is_flag = True, help='Prevent viruses from appearing on multiple trees (relevant if k > 0).')
 @click.option('-z','--tree_sorting_mode', required = False, default = 'distance', help='distance or fast -- determines if you sort trees by size or by coverage of phylogenetic space [Default = distance].')
 #@click.option('-v','--verbose', required = False, help='True/False. Show lots of tree building output?', is_flag=True)
 @click.pass_context
-def end_to_end(ctx,tree_sorting_mode,smallesttreesize,min_hmm_prevalence,classification_filter,batch,force,inputs,dbdir,outputdir,hitstoreport,subcluster,evaluecutoff,tree_algorithm,runmode,max_nodes_per_query,min_marker_overlap_with_query,min_marker_overlap_for_tree,threads,tmpdir):
+def end_to_end(ctx,tree_sorting_mode,non_redundant_trees,smallesttreesize,min_hmm_prevalence,classification_filter,batch,force,inputs,dbdir,outputdir,hitstoreport,subcluster,evaluecutoff,tree_algorithm,runmode,max_nodes_per_query,min_marker_overlap_with_query,min_marker_overlap_for_tree,threads,tmpdir):
 	markermatrix,distances = ctx.invoke(classify,inputs = inputs,force = force,dbdir = dbdir,outputdir = outputdir,hitstoreport = hitstoreport,subcluster = subcluster,evaluecutoff = evaluecutoff,threads = threads,tmpdir = tmpdir)
-	ctx.invoke(phylogeny,tree_sorting_mode=tree_sorting_mode,smallesttreesize = smallesttreesize,min_hmm_prevalence = min_hmm_prevalence, classification_filter = classification_filter,batch = batch, force = force, distances = distances, markermatrix = markermatrix, classifyout = outputdir,runmode = runmode,dbdir = dbdir,max_nodes_per_query = max_nodes_per_query,min_marker_overlap_with_query = min_marker_overlap_with_query, min_marker_overlap_for_tree = min_marker_overlap_for_tree,tree_algorithm = tree_algorithm, tmpdir = tmpdir, threads = threads, outputdir = outputdir)
+	ctx.invoke(phylogeny,tree_sorting_mode=tree_sorting_mode,non_redundant_trees = non_redundant_trees,smallesttreesize = smallesttreesize,min_hmm_prevalence = min_hmm_prevalence, classification_filter = classification_filter,batch = batch, force = force, distances = distances, markermatrix = markermatrix, classifyout = outputdir,runmode = runmode,dbdir = dbdir,max_nodes_per_query = max_nodes_per_query,min_marker_overlap_with_query = min_marker_overlap_with_query, min_marker_overlap_for_tree = min_marker_overlap_for_tree,tree_algorithm = tree_algorithm, tmpdir = tmpdir, threads = threads, outputdir = outputdir)
 
 @cli.command('download_db')
 @click.option('-p','--output_path', required=True, default = '.', help='Path to the place you want to store your vironomy database folder. [Default = .]',type = str)
