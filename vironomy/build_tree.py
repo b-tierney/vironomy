@@ -150,7 +150,11 @@ class treebuild:
 						t = list(treelistsorted[0])[0]
 						#### ADD A LINE THAT CHECKS FOR QUERIES ALREADY COVERED
 						if self.non_redundant_trees == True:
+							print('BEFORE')
+							print(t)
 							t = [x for x in t if x not in done]
+							print('AFTER')
+							print(t)
 							if len(t) == 0:
 								continue
 						indval = list(treelistsorted.loc[:,'indval'])[0]
