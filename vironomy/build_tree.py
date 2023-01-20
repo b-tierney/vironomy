@@ -189,9 +189,12 @@ class treebuild:
 		if len(short) < len(self.finaltrees) and len(short) != 0:
 			print('%s trees have fewer than %s genomes and will not be generated.'%(len(short),self.smallesttreesize))
 		self.finaltrees = [x for x in self.finaltrees if len(x)>=self.smallesttreesize]
+		print(self.finaltrees)
+		print([len(x) for x in self.finaltrees])
 		self.full_hmm_matrix = merged
 		self.queries = queries
 		print('	Going to generate a total of %s tree(s) based on your provided parameters.'%len(self.finaltrees))
+		self.full_hmm_matrix.to_csv('hmmmatrixtest.csv')
 		return(self.full_hmm_matrix)
 
 	def winnow(self,i):
@@ -324,6 +327,8 @@ class treebuild:
 
 	def parallel_hmm_hunting(self,i):
 		t = self.finaltrees[i]
+		print(t)
+		print(len(t))
 		treeid = 'tree_'+str(i)
 		mergedsub = self.full_hmm_matrix.loc[t,:]
 		sums = mergedsub.sum()
