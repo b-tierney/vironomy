@@ -433,12 +433,12 @@ class treebuild:
 						w.write(str(seqr) + '\n')
 						temp.append('.'.join(seqidr.split('.')[:-1])+ '_reference')
 			hmmcontig[hmm] = temp
-		self.alignmentcontigs = {}
-		for t in trees:
-			hmms = self.hmms_to_align[t]
-			contigs = [hmmcontig[x] for x in hmms]
-			contigs = list(set([item for sublist in contigs for item in sublist]))
-			self.alignmentcontigs[t] = contigs
+		#self.alignmentcontigs = {}
+		#for t in trees:
+		#	hmms = self.hmms_to_align[t]
+		#	contigs = [hmmcontig[x] for x in hmms]
+		#	contigs = list(set([item for sublist in contigs for item in sublist]))
+			#self.alignmentcontigs[t] = contigs
 		print('	All genes have been written to file and we are ready to run alignments.')
 		return([trees,self.alignmentcontigs])
 
