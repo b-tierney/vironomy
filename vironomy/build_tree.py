@@ -80,9 +80,9 @@ class treebuild:
 			querydist_sub = querydist.loc[q]		
 		potentialtree = list(querydist_sub[querydist_sub>0].index)
 		querydist_rawnum_sub = querydist_rawnum.loc[potentialtree,potentialtree]
-		maxval = int(self.min_marker_overlap_for_tree) + int(self.range_between_overlap)
+		maxval = int(self.min_marker_overlap_for_tree) + int(self.max_marker_overlap_range_for_tree)
 		querydist_rawnum_sub[querydist_rawnum_sub<=self.min_marker_overlap_for_tree]=0
-		querydist_rawnum_sub[querydist_rawnum_sub>self.max_marker_overlap_range_for_tree]=0
+		querydist_rawnum_sub[querydist_rawnum_sub>maxval]=0
 		potentialtree = list(querydist_rawnum_sub[querydist_rawnum_sub>0].index)
 		return(potentialtree)
 
