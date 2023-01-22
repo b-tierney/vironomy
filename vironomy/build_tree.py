@@ -88,7 +88,7 @@ class treebuild:
 
 	# this function iterates through HMMS -- starting with the most common, and breaks when all queries are covered to a given hmm prev threshold 
 	# not sure where else to put this note -- is it possible that the HMMs that distinguish between viral clusters will be the ones that matter?
-	def filter_merged_matrix(self,mergedmat,hmmprev):
+	def filter_merged_matrix(self,mergedmat):
 		hmmsums = mergedmat.sum().sort_values(ascending=False)
 		inddict = {}
 		for q in mergedmat.index:
@@ -104,7 +104,7 @@ class treebuild:
 					completecount = pd.DataFrame.from_dict(Counter(allqueriesdone), orient='index').loc[q,:][0]
 					if q in inddict.keys():
 						keep = True
-					if completecount >= hmmprev:
+					if completecount >= self.min_marker_overlap_for_tree:
 						try:
 							inddict.pop(q)
 							keep = True
@@ -349,7 +349,7 @@ class treebuild:
 		t = self.finaltrees[i]
 		treeid = 'tree_'+str(i)
 		mergedsub = self.full_hmm_matrix.loc[t,:]
-		mergedsub = self.filter_merged_matrix(self,mergedsub,self.min_marker_overlap_for_tree)
+		mergedsub = self.filter_merged_matrix(self,mergedsub)
 #		finaltree = list(mergedsub.index)
 #		lost = set(t) - set(finaltree)
 #		with open('%s/%s_lost_queries_due_to_failing_within_tree_hmm_overlap.txt'%(self.outdir,treeid),'w') as w:
