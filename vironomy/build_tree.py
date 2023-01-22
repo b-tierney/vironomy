@@ -92,6 +92,8 @@ class treebuild:
 		mergedmat = mergedmat[0]
 		hmmsums = mergedmat.sum().sort_values(ascending=False)
 		inddict = {}
+		print('here')
+		print(mergedmat.shape)
 		for q in mergedmat.index:
 			inddict[q] = 1 
 		outhmms = []
@@ -110,12 +112,14 @@ class treebuild:
 							inddict.pop(q)
 							keep = True
 						except:
+							keep = False
 							continue
 				if keep:
 					outhmms.append(h)
 				if h == hmmsums.index[-1]:
 					break
 		mergedmat = mergedmat.loc[:,outhmms]
+		print('finished')
 		return(mergedmat)
 
 	def split_denovo_tree(self):
@@ -185,7 +189,7 @@ class treebuild:
 						done = list(set(t).intersection(set(queriesleft)))
 						queriesleft = set(queriesleft) - set(done)
 					except:
-						print('%s queries are not going to placed on trees based on your provided parameters (e.g., they lack the requisite HMM overlaps). Going to write their IDs to a failed_trees.txt file in the output directory.')
+						print('An additional %s queries are not going to placed on trees based on your provided parameters (e.g., they lack the requisite HMM overlaps). Going to write their IDs to a failed_trees.txt file in the output directory.'%len(queriesleft)
 						queriesleft = list(queriesleft)
 						with open('%s/failed_trees.txt'%self.outdir,'w') as w:
 							for q in queriesleft:
@@ -362,41 +366,45 @@ class treebuild:
 #		if mergedsub.shape[1] == 0:
 #			print('No HMMs in tree %s -- try changing -h or -x.'%i)
 #			return None
-		contigcoverage = []
-		hmms_for_alignment=[]
-		contigcoverage.extend(list(set(list(mergedsub.index))))
-		while True:
-			i=mergedsub.columns[0]
-			col = mergedsub.loc[:,i]
-			mergedsub = mergedsub.drop(i,axis=1)
-			col = col[col>0].index
-			contigcoverage.extend(list(col))
-			temp = Counter(contigcoverage)
-			temp = pd.DataFrame.from_dict(temp,orient='index')
-			hmms_for_alignment.append(i)
-			if int(self.min_marker_overlap_for_tree) == 0:
-				stopping = 1 
-			else:
-				stopping = self.min_marker_overlap_for_tree
-			complete = temp[temp>=(stopping+1)].dropna().index
-			mergedsub = mergedsub.drop(set(complete) & set(mergedsub.index))
-			if mergedsub.shape[0]==0:
-				break
-			if mergedsub.shape[1]==0:
-				break
-			sums = mergedsub.sum()
-			tokeep = sums[sums>0].sort_values(ascending=False).index
-			mergedsub = mergedsub.loc[:,tokeep]
-		return([treeid,mergedsubtemp.loc[:,hmms_for_alignment],hmms_for_alignment,mergedsubtemp.index])
+		#contigcoverage = []
+		#hmms_for_alignment=[]
+		#contigcoverage.extend(list(set(list(mergedsub.index))))
+		#while True:
+		#	i=mergedsub.columns[0]
+		#	col = mergedsub.loc[:,i]
+		#	mergedsub = mergedsub.drop(i,axis=1)
+		#	col = col[col>0].index
+		#	contigcoverage.extend(list(col))
+		#	temp = Counter(contigcoverage)
+		#	temp = pd.DataFrame.from_dict(temp,orient='index')
+		#	hmms_for_alignment.append(i)
+		#	if int(self.min_marker_overlap_for_tree) == 0:
+		#		stopping = 1 
+		#	else:
+		#		stopping = self.min_marker_overlap_for_tree
+		#	complete = temp[temp>=(stopping+1)].dropna().index
+		#	mergedsub = mergedsub.drop(set(complete) & set(mergedsub.index))
+		#	if mergedsub.shape[0]==0:
+		#		break
+		#	if mergedsub.shape[1]==0:
+		#		break
+		#	sums = mergedsub.sum()
+		#	tokeep = sums[sums>0].sort_values(ascending=False).index
+		#	mergedsub = mergedsub.loc[:,tokeep]
+		#return([treeid,mergedsubtemp.loc[:,hmms_for_alignment],hmms_for_alignment,mergedsubtemp.index])
+		return([treeid,mergedsub,list(mergedsub.columns),mergedsub.index])
 
 	def find_tree_specific_hmms(self):
 		print('	Finding minimum set of HMMs for alignment.')
 		self.metadata_sharedhmms = {}
 		self.hmms_to_align = {}
 		self.alignmentcontigs = {}
-		pool = Pool(self.threads)  
-		treeout = pool.map(self.parallel_hmm_hunting, range(0,len(self.finaltrees))) 
-		pool.close()
+		treeout = []
+		for x in range(0,len(self.finaltrees)):
+			treeout.append(self.parallel_hmm_hunting(x))
+		#pool = Pool(self.threads)  
+		#treeout = pool.map(self.parallel_hmm_hunting, range(0,len(self.finaltrees))) 
+		#pool.close()
 		for t in treeout:
 			if t is not None:
 				self.metadata_sharedhmms[t[0]] = t[1]
