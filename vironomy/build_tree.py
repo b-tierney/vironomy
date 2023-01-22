@@ -16,11 +16,11 @@ import subprocess
 
 class treebuild:
 
-	def __init__(self,tree_sorting_mode,non_redundant_trees,global_min_hmm_prevalence,min_hmm_prevalence,smallesttreesize,taxmap,force,batch,distances,query_markermatrix,ref_markermatrix,treetype,max_nodes_per_query,min_marker_overlap_with_query,min_marker_overlap_for_tree,genbankannos,genbankorfs,queryorfs,queryannos,tree_algorithm,tmpdir,outdir,threads,bootstrapnum):
+	def __init__(self,tree_sorting_mode,non_redundant_trees,global_min_hmm_prevalence,max_marker_overlap_range_for_tree,smallesttreesize,taxmap,force,batch,distances,query_markermatrix,ref_markermatrix,treetype,max_nodes_per_query,min_marker_overlap_with_query,min_marker_overlap_for_tree,genbankannos,genbankorfs,queryorfs,queryannos,tree_algorithm,tmpdir,outdir,threads,bootstrapnum):
 		self.treetype = treetype
 		self.smallesttreesize = smallesttreesize
 		self.taxmap = taxmap
-		self.min_hmm_prevalence = min_hmm_prevalence
+		self.max_marker_overlap_range_for_tree = max_marker_overlap_range_for_tree
 		self.global_min_hmm_prevalence = global_min_hmm_prevalence
 		self.distances = distances
 		self.max_nodes_per_query = max_nodes_per_query
@@ -73,11 +73,17 @@ class treebuild:
 	def generate_treelist(self,info):
 		q = info[0]
 		querydist = info[1]
+		querydist_rawnum = info[2]
 		if len(querydist.loc[q].shape)>1:
 			querydist_sub = querydist.loc[q].sum()
 		else:
-			querydist_sub = querydist.loc[q]
+			querydist_sub = querydist.loc[q]		
 		potentialtree = list(querydist_sub[querydist_sub>0].index)
+		querydist_rawnum_sub = querydist_rawnum.loc[potentialtree,potentialtree]
+		maxval = int(self.min_marker_overlap_for_tree) + int(self.range_between_overlap)
+		querydist_rawnum_sub[querydist_rawnum_sub<=self.min_marker_overlap_for_tree]=0
+		querydist_rawnum_sub[querydist_rawnum_sub>self.max_marker_overlap_range_for_tree]=0
+		potentialtree = list(querydist_rawnum_sub[querydist_rawnum_sub>0].index)
 		return(potentialtree)
 
 	# this function iterates through HMMS -- starting with the most common, and breaks when all queries are covered to a given hmm prev threshold 
@@ -122,7 +128,7 @@ class treebuild:
 		finalshape = merged.shape[0]
 		finalqueries = list(merged.index)
 		dropped = list(set(initialqueries) - set(finalqueries))
-		print('	Dropping %s queries because they contained HMMS below the global prevalence threshold (set with -x).'%(initialshape - finalshape))
+		print('	Dropping %s queries because they contained only HMMs below the global prevalence threshold (set with -x).'%(initialshape - finalshape))
 		with open('%s/failed_queries_global_hmm_threshold.txt'%self.outdir,'w') as w:
 			for line in dropped:
 				w.write(line+'\n')
@@ -132,11 +138,12 @@ class treebuild:
 		if(self.min_marker_overlap_for_tree>0):
 			overlaps = merged.dot(merged.T)
 			querydist = overlaps.loc[queries,:]
-			querydist[querydist<self.min_marker_overlap_for_tree]=0
+			querydist_rawnum = overlaps.loc[queries,:]
+			querydist[querydist<=self.min_marker_overlap_for_tree]=0
 			querydist[querydist!=0]=1
 			treelist = []
 			pool = Pool(self.threads)                         
-			treelist = pool.map(self.generate_treelist, [[x,querydist] for x in querydist.index]) 
+			treelist = pool.map(self.generate_treelist, [[x,querydist,querydist_rawnum] for x in querydist.index]) 
 			pool.close()
 			treelist.sort()
 			treelist = list(treelist for treelist,_ in itertools.groupby(treelist))
@@ -341,31 +348,18 @@ class treebuild:
 		t = self.finaltrees[i]
 		treeid = 'tree_'+str(i)
 		mergedsub = self.full_hmm_matrix.loc[t,:]
-		#print(mergedsub.shape)
-		#if(mergedsub.shape[1] == 0):
-		#	print('No HMMs in tree %s -- try changing -h.'%i)
-		#	with open('%s/%s_lost_queries_due_to_failing_hmm_overlap.txt'%(self.tmpdir,treeid),'w') as w:
-		#		for q in list(mergedsub.index):
-		#			w.write(q + '\n')
-		#	return None
-		#sums = mergedsub.sum()
-		#tokeep = sums[sums>self.min_hmm_prevalence].sort_values(ascending=False).index
-		#mergedsub = mergedsub.loc[:,tokeep]
-		hmmcutoff = self.min_hmm_prevalence
-		if hmmcutoff >= len(t):
-			hmmcutoff = len(t)
-		mergedsub = filter_merged_matrix(self,mergedsub,hmmcutoff)
-		finaltree = list(mergedsub.index)
-		lost = set(t) - set(finaltree)
-		with open('%s/%s_lost_queries_due_to_failing_within_tree_hmm_overlap.txt'%(self.outdir,treeid),'w') as w:
-			for q in list(lost):
-				w.write(q + '\n')
-		if mergedsub.shape[0] == 0:
-			print('Dropping all queries for trees %s -- try changing -k or -h or -x.'%i)
-			return None
-		if mergedsub.shape[1] == 0:
-			print('No HMMs in tree %s -- try changing -h or -x.'%i)
-			return None
+		mergedsub = self.filter_merged_matrix(self,mergedsub,self.min_marker_overlap_for_tree)
+#		finaltree = list(mergedsub.index)
+#		lost = set(t) - set(finaltree)
+#		with open('%s/%s_lost_queries_due_to_failing_within_tree_hmm_overlap.txt'%(self.outdir,treeid),'w') as w:
+#			for q in list(lost):
+#				w.write(q + '\n')
+#		if mergedsub.shape[0] == 0:
+#			print('Dropping all queries for trees %s -- try changing -k or -h or -x.'%i)
+#			return None
+#		if mergedsub.shape[1] == 0:
+#			print('No HMMs in tree %s -- try changing -h or -x.'%i)
+#			return None
 		contigcoverage = []
 		hmms_for_alignment=[]
 		contigcoverage.extend(list(set(list(mergedsub.index))))
