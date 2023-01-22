@@ -148,9 +148,12 @@ class treebuild:
 			querydist[querydist<=self.min_marker_overlap_for_tree]=0
 			querydist[querydist!=0]=1
 			treelist = []
-			pool = Pool(self.threads)                         
-			treelist = pool.map(self.generate_treelist, [[x,querydist,querydist_rawnum] for x in querydist.index]) 
-			pool.close()
+			#pool = Pool(self.threads)                         
+			#treelist = pool.map(self.generate_treelist, [[x,querydist,querydist_rawnum] for x in querydist.index]) 
+			#pool.close()
+			for x in querydist.index:
+				print(x)
+				treelist.append(self.generate_treelist([x,querydist,querydist_rawnum]))
 			treelist.sort()
 			treelist = list(treelist for treelist,_ in itertools.groupby(treelist))
 			treelist.reverse()
@@ -271,9 +274,12 @@ class treebuild:
 			overlaps[overlaps<self.min_marker_overlap_for_tree]=0
 			overlaps[overlaps!=0]=1
 			treelist = []
-			pool = Pool(self.threads)                         
-			treelist = pool.map(self.generate_treelist, [[x,overlaps] for x in overlaps.index]) 
-			pool.close()
+			#pool = Pool(self.threads)                         
+			#treelist = pool.map(self.generate_treelist, [[x,overlaps,] for x in overlaps.index]) 
+			#pool.close()
+			for x in overlaps.index:
+				print(x)
+				self.generate_treelist([x,overlaps])
 			treelist = list(treelist for treelist,_ in itertools.groupby(treelist))
 			print('	Identified %s potential trees, filtering them down.'%len(treelist))
 			queriesleft = list(set(queries))
