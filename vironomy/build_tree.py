@@ -134,6 +134,7 @@ class treebuild:
 				w.write(line+'\n')
 		print("	Building trees with a total of possible %s HMMs."%merged.shape[1])
 		# split into separate trees if necessary
+		self.query_markermatrix = self.query_markermatrix.loc[finalqueries,]
 		queries = list(set(list(self.query_markermatrix.index)))
 		if(self.min_marker_overlap_for_tree>0):
 			overlaps = merged.dot(merged.T)
