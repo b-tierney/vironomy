@@ -337,6 +337,9 @@ class treebuild:
 			if mergedsub.shape[0] == 0:
 				print('Dropping all rows for trees %s -- try changing -k or -h.'%i)
 				return None
+			if mergedsub.shape[1] == 0:
+				print('No HMMs in tree %s -- try changing -h.'%i)
+				return None
 		contigcoverage = []
 		hmms_for_alignment=[]
 		contigcoverage.extend(list(set(list(mergedsub.index))))
@@ -374,6 +377,10 @@ class treebuild:
 		pool.close()
 		for t in treeout:
 			if t is not None:
+				print('here')
+				print(t[0])
+				print(t[1])
+				print(t[2])
 				self.metadata_sharedhmms[t[0]] = t[1]
 				self.alignmentcontigs[t[0]] = t[3]
 				self.hmms_to_align[t[0]] = t[2]
