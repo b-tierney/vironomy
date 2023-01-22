@@ -80,22 +80,30 @@ class treebuild:
 		potentialtree = list(querydist_sub[querydist_sub>0].index)
 		return(potentialtree)
 
-	def filter_merged_matrix(self,mergedmat):
+	# this function iterates through HMMS -- starting with the most common, and breaks when all queries are covered to a given hmm prev threshold 
+	# not sure where else to put this note -- is it possible that the HMMs that distinguish between viral clusters will be the ones that matter?
+	def filter_merged_matrix(self,mergedmat,hmmprev):
 		hmmsums = mergedmat.sum().sort_values(ascending=False)
 		inddict = {}
 		for q in mergedmat.index:
 			inddict[q] = 1 
 		outhmms = []
+		allqueriesdone = []
 		while len(inddict.keys())>0:
 			for h in hmmsums.index:
 				keep = False
 				qlist = list(set(mergedmat[mergedmat.loc[:,h]==1].index))
 				for q in qlist:
-					try:
-						inddict.pop(q)
+					allqueriesdone.append(q)
+					completecount = pd.DataFrame.from_dict(Counter(allqueriesdone), orient='index').loc[q,:][0]
+					if q in inddict.keys():
 						keep = True
-					except:
-						continue
+					if completecount >= hmmprev:
+						try:
+							inddict.pop(q)
+							keep = True
+						except:
+							continue
 				if keep:
 					outhmms.append(h)
 				if h == hmmsums.index[-1]:
@@ -112,9 +120,11 @@ class treebuild:
 		initialqueries = list(merged.index)
 		merged = merged[merged.sum(axis=1) > 0]
 		finalshape = merged.shape[0]
-		print('Dropping %s queries because they contained HMMS below the global prevalence threshold (set with -x).')
+		finalqueries = list(merged.index)
+		dropped = list(set(initialqueries) - set(finalqueries))
+		print('	Dropping %s queries because they contained HMMS below the global prevalence threshold (set with -x).'%(initialshape - finalshape))
 		with open('%s/failed_queries_global_hmm_threshold.txt'%self.outdir,'w') as w:
-			for line in initialqueries:
+			for line in dropped:
 				w.write(line+'\n')
 		print("	Building trees with a total of possible %s HMMs."%merged.shape[1])
 		# split into separate trees if necessary
@@ -330,8 +340,6 @@ class treebuild:
 	def parallel_hmm_hunting(self,i):
 		t = self.finaltrees[i]
 		treeid = 'tree_'+str(i)
-		print('asd;kjfhasdlfghalkjfhaslkdjfhasjl')
-		print(len(t))
 		mergedsub = self.full_hmm_matrix.loc[t,:]
 		#print(mergedsub.shape)
 		#if(mergedsub.shape[1] == 0):
@@ -340,21 +348,24 @@ class treebuild:
 		#		for q in list(mergedsub.index):
 		#			w.write(q + '\n')
 		#	return None
-		sums = mergedsub.sum()
-		tokeep = sums[sums>self.min_hmm_prevalence].sort_values(ascending=False).index
-		mergedsub = mergedsub.loc[:,tokeep]
-		lost = mergedsub[mergedsub.sum(axis=1)==0].index
-		mergedsub = mergedsub.drop(lost)
-		mergedsubtemp = mergedsub
+		#sums = mergedsub.sum()
+		#tokeep = sums[sums>self.min_hmm_prevalence].sort_values(ascending=False).index
+		#mergedsub = mergedsub.loc[:,tokeep]
+		hmmcutoff = self.min_hmm_prevalence
+		if hmmcutoff >= len(t):
+			hmmcutoff = len(t)
+		mergedsub = filter_merged_matrix(self,mergedsub,hmmcutoff)
+		finaltree = list(mergedsub.index)
+		lost = set(t) - set(finaltree)
 		with open('%s/%s_lost_queries_due_to_failing_within_tree_hmm_overlap.txt'%(self.outdir,treeid),'w') as w:
 			for q in list(lost):
 				w.write(q + '\n')
-			if mergedsub.shape[0] == 0:
-				print('Dropping all rows for trees %s -- try changing -k or -h or -x.'%i)
-				return None
-			if mergedsub.shape[1] == 0:
-				print('No HMMs in tree %s -- try changing -h or -x.'%i)
-				return None
+		if mergedsub.shape[0] == 0:
+			print('Dropping all queries for trees %s -- try changing -k or -h or -x.'%i)
+			return None
+		if mergedsub.shape[1] == 0:
+			print('No HMMs in tree %s -- try changing -h or -x.'%i)
+			return None
 		contigcoverage = []
 		hmms_for_alignment=[]
 		contigcoverage.extend(list(set(list(mergedsub.index))))
