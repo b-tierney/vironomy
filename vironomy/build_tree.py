@@ -16,11 +16,12 @@ import subprocess
 
 class treebuild:
 
-	def __init__(self,tree_sorting_mode,non_redundant_trees,min_hmm_prevalence,smallesttreesize,taxmap,force,batch,distances,query_markermatrix,ref_markermatrix,treetype,max_nodes_per_query,min_marker_overlap_with_query,min_marker_overlap_for_tree,genbankannos,genbankorfs,queryorfs,queryannos,tree_algorithm,tmpdir,outdir,threads,bootstrapnum):
+	def __init__(self,tree_sorting_mode,non_redundant_trees,global_min_hmm_prevalence,min_hmm_prevalence,smallesttreesize,taxmap,force,batch,distances,query_markermatrix,ref_markermatrix,treetype,max_nodes_per_query,min_marker_overlap_with_query,min_marker_overlap_for_tree,genbankannos,genbankorfs,queryorfs,queryannos,tree_algorithm,tmpdir,outdir,threads,bootstrapnum):
 		self.treetype = treetype
 		self.smallesttreesize = smallesttreesize
 		self.taxmap = taxmap
 		self.min_hmm_prevalence = min_hmm_prevalence
+		self.global_min_hmm_prevalence = global_min_hmm_prevalence
 		self.distances = distances
 		self.max_nodes_per_query = max_nodes_per_query
 		self.query_markermatrix = query_markermatrix
@@ -105,9 +106,16 @@ class treebuild:
 	def split_denovo_tree(self):
 		merged = self.query_markermatrix
 		# remove hmms with too low a prevalence
-		merged = self.filter_merged_matrix(merged)
-		print(merged.shape)
-		#merged = merged[merged.columns[merged.sum()>=self.min_hmm_prevalence]]
+		#merged = self.filter_merged_matrix(merged)
+		merged = merged[merged.columns[merged.sum()>=self.global_min_hmm_prevalence]]
+		initialshape = merged.shape[0]
+		initialqueries = list(merged.index)
+		merged = merged[merged.sum(axis=1) > 0]
+		finalshape = merged.shape[0]
+		print('Dropping %s queries because they contained HMMS below the global prevalence threshold (set with -x).')
+		with open('%s/failed_queries_global_hmm_threshold.txt'%self.outdir,'w') as w:
+			for line in initialqueries:
+				w.write(line+'\n')
 		print("	Building trees with a total of possible %s HMMs."%merged.shape[1])
 		# split into separate trees if necessary
 		queries = list(set(list(self.query_markermatrix.index)))
@@ -193,7 +201,6 @@ class treebuild:
 		self.full_hmm_matrix = merged
 		self.queries = queries
 		print('	Going to generate a total of %s tree(s) based on your provided parameters.'%len(self.finaltrees))
-		self.full_hmm_matrix.to_csv('hmmmatrixtest.csv')
 		return(self.full_hmm_matrix)
 
 	def winnow(self,i):
@@ -322,23 +329,31 @@ class treebuild:
 
 	def parallel_hmm_hunting(self,i):
 		t = self.finaltrees[i]
-		print(len(t))
 		treeid = 'tree_'+str(i)
+		print('asd;kjfhasdlfghalkjfhaslkdjfhasjl')
+		print(len(t))
 		mergedsub = self.full_hmm_matrix.loc[t,:]
+		#print(mergedsub.shape)
+		#if(mergedsub.shape[1] == 0):
+		#	print('No HMMs in tree %s -- try changing -h.'%i)
+		#	with open('%s/%s_lost_queries_due_to_failing_hmm_overlap.txt'%(self.tmpdir,treeid),'w') as w:
+		#		for q in list(mergedsub.index):
+		#			w.write(q + '\n')
+		#	return None
 		sums = mergedsub.sum()
 		tokeep = sums[sums>self.min_hmm_prevalence].sort_values(ascending=False).index
 		mergedsub = mergedsub.loc[:,tokeep]
 		lost = mergedsub[mergedsub.sum(axis=1)==0].index
 		mergedsub = mergedsub.drop(lost)
 		mergedsubtemp = mergedsub
-		with open('%s/%s_lost_queries_due_to_failing_hmm_overlap.txt'%(self.tmpdir,treeid),'w') as w:
+		with open('%s/%s_lost_queries_due_to_failing_within_tree_hmm_overlap.txt'%(self.outdir,treeid),'w') as w:
 			for q in list(lost):
 				w.write(q + '\n')
 			if mergedsub.shape[0] == 0:
-				print('Dropping all rows for trees %s -- try changing -k or -h.'%i)
+				print('Dropping all rows for trees %s -- try changing -k or -h or -x.'%i)
 				return None
 			if mergedsub.shape[1] == 0:
-				print('No HMMs in tree %s -- try changing -h.'%i)
+				print('No HMMs in tree %s -- try changing -h or -x.'%i)
 				return None
 		contigcoverage = []
 		hmms_for_alignment=[]
@@ -377,10 +392,6 @@ class treebuild:
 		pool.close()
 		for t in treeout:
 			if t is not None:
-				print('here')
-				print(t[0])
-				print(t[1])
-				print(t[2])
 				self.metadata_sharedhmms[t[0]] = t[1]
 				self.alignmentcontigs[t[0]] = t[3]
 				self.hmms_to_align[t[0]] = t[2]
