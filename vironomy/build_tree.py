@@ -171,6 +171,10 @@ class treebuild:
 				alltrees.extend(seed)
 				treeoptions = treeoptions[treeoptions.loc[:,'indval']!=indval]
 				while True:
+					print(treeoptions)
+					print(treeoptions.shape)
+					if treeoptions.shape[0] == 0:
+						break
 					if len(queriesleft) == 0:	
 						break
 					treeoptions[1] = [len(list(set(queriesleft) & set(x))) for x in list(treeoptions[0])]
