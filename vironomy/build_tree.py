@@ -350,7 +350,7 @@ class treebuild:
 		t = self.finaltrees[i]
 		treeid = 'tree_'+str(i)
 		mergedsub = self.full_hmm_matrix.loc[t,:]
-		mergedsub = self.filter_merged_matrix(self,[mergedsub])
+		mergedsub = self.filter_merged_matrix([mergedsub])
 #		finaltree = list(mergedsub.index)
 #		lost = set(t) - set(finaltree)
 #		with open('%s/%s_lost_queries_due_to_failing_within_tree_hmm_overlap.txt'%(self.outdir,treeid),'w') as w:
