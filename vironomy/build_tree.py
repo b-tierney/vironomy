@@ -92,16 +92,21 @@ class treebuild:
 		mergedmat = mergedmat[0]
 		hmmsums = mergedmat.sum().sort_values(ascending=False)
 		inddict = {}
-		print('here')
-		print(mergedmat.shape)
 		for q in mergedmat.index:
 			inddict[q] = 1 
 		outhmms = []
 		allqueriesdone = []
+		# until all queries are gone or you've exhausted HMMs
 		while len(inddict.keys())>0:
+			# loop through each hmm
 			for h in hmmsums.index:
+				# by default, don't keep it
 				keep = False
+				# get all the queries that have that hmm
 				qlist = list(set(mergedmat[mergedmat.loc[:,h]==1].index))
+				# for each query
+				allqueriesdone.extend(qlist)
+				completecount = pd.DataFrame.from_dict(Counter(allqueriesdone), orient='index').loc[q,:][0]
 				for q in qlist:
 					allqueriesdone.append(q)
 					completecount = pd.DataFrame.from_dict(Counter(allqueriesdone), orient='index').loc[q,:][0]
@@ -364,7 +369,7 @@ class treebuild:
 		t = self.finaltrees[i]
 		treeid = 'tree_'+str(i)
 		mergedsub = self.full_hmm_matrix.loc[t,:]
-		mergedsub = self.filter_merged_matrix([mergedsub])
+		#mergedsub = self.filter_merged_matrix([mergedsub])
 #		finaltree = list(mergedsub.index)
 #		lost = set(t) - set(finaltree)
 #		with open('%s/%s_lost_queries_due_to_failing_within_tree_hmm_overlap.txt'%(self.outdir,treeid),'w') as w:
@@ -376,33 +381,35 @@ class treebuild:
 #		if mergedsub.shape[1] == 0:
 #			print('No HMMs in tree %s -- try changing -h or -x.'%i)
 #			return None
-		#contigcoverage = []
-		#hmms_for_alignment=[]
-		#contigcoverage.extend(list(set(list(mergedsub.index))))
-		#while True:
-		#	i=mergedsub.columns[0]
-		#	col = mergedsub.loc[:,i]
-		#	mergedsub = mergedsub.drop(i,axis=1)
-		#	col = col[col>0].index
-		#	contigcoverage.extend(list(col))
-		#	temp = Counter(contigcoverage)
-		#	temp = pd.DataFrame.from_dict(temp,orient='index')
-		#	hmms_for_alignment.append(i)
-		#	if int(self.min_marker_overlap_for_tree) == 0:
-		#		stopping = 1 
-		#	else:
-		#		stopping = self.min_marker_overlap_for_tree
-		#	complete = temp[temp>=(stopping+1)].dropna().index
-		#	mergedsub = mergedsub.drop(set(complete) & set(mergedsub.index))
-		#	if mergedsub.shape[0]==0:
-		#		break
-		#	if mergedsub.shape[1]==0:
-		#		break
-		#	sums = mergedsub.sum()
-		#	tokeep = sums[sums>0].sort_values(ascending=False).index
-		#	mergedsub = mergedsub.loc[:,tokeep]
-		#return([treeid,mergedsubtemp.loc[:,hmms_for_alignment],hmms_for_alignment,mergedsubtemp.index])
-		return([treeid,mergedsub,list(mergedsub.columns),mergedsub.index])
+		mergedsub = mergedsub[mergedsub.sum().sort_values(ascending=False).index]
+		mergedsubtemp = mergedsub
+		contigcoverage = []
+		hmms_for_alignment=[]
+		contigcoverage.extend(list(set(list(mergedsub.index))))
+		while True:
+			i=mergedsub.columns[0]
+			col = mergedsub.loc[:,i]
+			mergedsub = mergedsub.drop(i,axis=1)
+			col = col[col>0].index
+			contigcoverage.extend(list(col))
+			temp = Counter(contigcoverage)
+			temp = pd.DataFrame.from_dict(temp,orient='index')
+			hmms_for_alignment.append(i)
+			if int(self.min_marker_overlap_for_tree) == 0:
+				stopping = 1 
+			else:
+				stopping = self.min_marker_overlap_for_tree
+			complete = temp[temp>=(stopping+1)].dropna().index
+			mergedsub = mergedsub.drop(set(complete) & set(mergedsub.index))
+			if mergedsub.shape[0]==0:
+				break
+			if mergedsub.shape[1]==0:
+				break
+			sums = mergedsub.sum()
+			tokeep = sums[sums>0].sort_values(ascending=False).index
+			mergedsub = mergedsub.loc[:,tokeep]
+		return([treeid,mergedsubtemp.loc[:,hmms_for_alignment],hmms_for_alignment,mergedsubtemp.index])
+		#return([treeid,mergedsub,list(mergedsub.columns),mergedsub.index])
 
 	def find_tree_specific_hmms(self):
 		print('	Finding minimum set of HMMs for alignment.')
