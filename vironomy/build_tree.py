@@ -189,7 +189,7 @@ class treebuild:
 						done = list(set(t).intersection(set(queriesleft)))
 						queriesleft = set(queriesleft) - set(done)
 					except:
-						print('An additional %s queries are not going to placed on trees based on your provided parameters (e.g., they lack the requisite HMM overlaps). Going to write their IDs to a failed_trees.txt file in the output directory.'%len(queriesleft)
+						print('An additional %s queries are not going to placed on trees based on your provided parameters (e.g., they lack the requisite HMM overlaps). Going to write their IDs to a failed_trees.txt file in the output directory.'%len(queriesleft))
 						queriesleft = list(queriesleft)
 						with open('%s/failed_trees.txt'%self.outdir,'w') as w:
 							for q in queriesleft:
