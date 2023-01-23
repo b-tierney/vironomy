@@ -462,8 +462,6 @@ class treebuild:
 		queryannos = pd.read_csv(str(self.queryannos),header=None,index_col=0,sep='\t')
 		queryannos['contigid'] = (queryannos).index.str.rsplit('.', n=1).str[0] + '_query'
 		queryannos = queryannos[queryannos['contigid'].isin(self.queries)]
-		print(self.queries)
-		print(queryannos)
 		queryannos = queryannos.drop_duplicates(['contigid',1])
 		hmmvals = [x.replace("'","_") for x in queryannos.iloc[:,0]]
 		queryannos.iloc[:,0] = hmmvals
@@ -575,7 +573,6 @@ class treebuild:
 			contigs = self.alignmentcontigs[t]
 			with open(aligndir + '/contig_alignment_all_hmms.msa','w') as w:
 				for c in contigs:
-					print(c)
 					alignment = ''
 					hmms_contig = self.hmms_to_align[t]
 					for val in hmms_contig:
