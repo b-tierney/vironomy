@@ -576,6 +576,7 @@ class treebuild:
 						#print(m)
 						try:	
 							print(c)
+							print(m[0].keys())
 							alignment = alignment + str(m[0][c].seq)
 						except:
 							alignment = alignment + '-'*int(m[1])
