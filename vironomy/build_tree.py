@@ -225,16 +225,8 @@ class treebuild:
 			self.finaltrees = finaltrees
 		else:
 			self.finaltrees = [list(set(list(merged.index)))]
-		short = [x for x in self.finaltrees if len(x)<self.smallesttreesize]
-		if len(short) == len(self.finaltrees):
-			print('None of your trees have enough genomes! Try reducing the required number of overlapping HMMs.')
-			quit()
-		if len(short) < len(self.finaltrees) and len(short) != 0:
-			print('%s trees have fewer than %s genomes and will not be generated.'%(len(short),self.smallesttreesize))
-		self.finaltrees = [x for x in self.finaltrees if len(x)>=self.smallesttreesize]
 		self.full_hmm_matrix = merged
 		self.queries = queries
-		print('	Going to generate a total of %s tree(s) based on your provided parameters.'%len(self.finaltrees))
 		return(self.full_hmm_matrix)
 
 	def winnow(self,i):
@@ -360,24 +352,13 @@ class treebuild:
 			self.finaltrees = finaltrees
 		else:
 			self.finaltrees = [list(set(list(merged.index)))]
-		short = [x for x in self.finaltrees if len(x)<self.smallesttreesize]
-		if len(short) == len(self.finaltrees):
-			print('	None of your trees have enough genomes! Try reducing the required number of overlapping HMMs.')
-			quit()
-		if len(short) < len(self.finaltrees) and len(short) != 0:
-			print('	%s trees have fewer than %s genomes and will not be generated.'%(len(short),self.smallesttreesize))
-		self.finaltrees = [x for x in self.finaltrees if len(x)>=self.smallesttreesize]
 		colvals = [x.replace("'",'_') for x in list(merged.columns)]
 		merged.columns = colvals
 		self.full_hmm_matrix = merged
 		self.queries = queries
-		lengths =[len(x) for x in self.finaltrees]
-		print('	Going to generate a total of %s tree(s) based on your provided parameters.'%len(self.finaltrees))
-		if len(lengths)>1:
-			print('		Smallest tree has %s genomes'%min(lengths))
-			print('		Largest tree has %s genomes'%max(lengths))
 		return(self.full_hmm_matrix)
 
+	
 	def parallel_hmm_hunting(self,i):
 		t = self.finaltrees[i]
 		treeid = 'tree_'+str(i)
@@ -429,17 +410,28 @@ class treebuild:
 		self.metadata_sharedhmms = {}
 		self.hmms_to_align = {}
 		self.alignmentcontigs = {}
-		treeout = []
-		for x in range(0,len(self.finaltrees)):
-			treeout.append(self.parallel_hmm_hunting(x))
-		#pool = Pool(self.threads)  
-		#treeout = pool.map(self.parallel_hmm_hunting, range(0,len(self.finaltrees))) 
-		#pool.close()
+		#treeout = []
+		#for x in range(0,len(self.finaltrees)):
+	#		treeout.append(self.parallel_hmm_hunting(x))
+		pool = Pool(self.threads)  
+		treeout = pool.map(self.parallel_hmm_hunting, range(0,len(self.finaltrees))) 
+		pool.close()
+		short = [x[3] for x in treeout if len(x)<self.smallesttreesize]
+		if len(short) == len(treeout):
+			print('	None of your trees have enough genomes! Try reducing the required number of overlapping HMMs.')
+			quit()
+		if len(short) < len(treeout) and len(short) != 0:
+			print('	%s trees have fewer than %s genomes and will not be generated based on your minimum treesize parameter.'%(len(short),self.smallesttreesize))
+		treeout = [x for x in treeout if len(x[3])>=self.smallesttreesize]
+		lengths =[len(x[3]) for x in treeout]
+		print('	Going to generate a total of %s tree(s) based on your provided parameters.'%len(treeout))
+		if len(lengths)>1:
+			print('		Smallest tree has %s genomes'%min(lengths))
+			print('		Largest tree has %s genomes'%max(lengths))	
 		for t in treeout:
-			if t is not None:
-				self.metadata_sharedhmms[t[0]] = t[1]
-				self.alignmentcontigs[t[0]] = t[3]
-				self.hmms_to_align[t[0]] = t[2]
+			self.metadata_sharedhmms[t[0]] = t[1]
+			self.alignmentcontigs[t[0]] = t[3]
+			self.hmms_to_align[t[0]] = t[2]
 		return(self.metadata_sharedhmms)
 
 	def prep_for_alignment(self):
