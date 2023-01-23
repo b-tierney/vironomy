@@ -460,8 +460,10 @@ class treebuild:
 		# load in and subset the query orfs 
 		queryorfs_loaded = SeqIO.to_dict(SeqIO.parse(str(self.queryorfs), "fasta"))
 		queryannos = pd.read_csv(str(self.queryannos),header=None,index_col=0,sep='\t')
-		queryannos['contigid'] = (queryannos).index.str.rsplit('.', n=1).str[0] + '_qyery'
+		queryannos['contigid'] = (queryannos).index.str.rsplit('.', n=1).str[0] + '_query'
 		queryannos = queryannos[queryannos['contigid'].isin(self.queries)]
+		print(self.queries)
+		print(queryannos)
 		queryannos = queryannos.drop_duplicates(['contigid',1])
 		hmmvals = [x.replace("'","_") for x in queryannos.iloc[:,0]]
 		queryannos.iloc[:,0] = hmmvals
