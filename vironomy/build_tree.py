@@ -567,15 +567,17 @@ class treebuild:
 			with open(aligndir + '/contig_alignment_all_hmms.msa','w') as w:
 				for c in contigs:
 					alignment = ''
+					c = c.replace('_query','')
+					c = c.replace('_reference','')
 					hmms_contig = self.hmms_to_align[t]
 					for val in hmms_contig:
 						val = val.replace("'","_")
 						m = msas[val]
 						try:
-							alignment = alignment + str(m[0][c[1:]].seq)
+							alignment = alignment + str(m[0][c].seq)
 						except:
 							alignment = alignment + '-'*int(m[1])
-					w.write(c + '\n')
+					w.write('>' + c + '\n')
 					w.write(str(alignment) + '\n')
 
 	def build_tree(self,trees):
