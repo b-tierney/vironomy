@@ -230,8 +230,6 @@ class treebuild:
 		if len(short) < len(self.finaltrees) and len(short) != 0:
 			print('%s trees have fewer than %s genomes and will not be generated.'%(len(short),self.smallesttreesize))
 		self.finaltrees = [x for x in self.finaltrees if len(x)>=self.smallesttreesize]
-		print(self.finaltrees)
-		print([len(x) for x in self.finaltrees])
 		self.full_hmm_matrix = merged
 		self.queries = queries
 		print('	Going to generate a total of %s tree(s) based on your provided parameters.'%len(self.finaltrees))
@@ -416,7 +414,6 @@ class treebuild:
 			sums = mergedsub.sum()
 			tokeep = sums[sums>0].sort_values(ascending=False).index
 			mergedsub = mergedsub.loc[:,tokeep]
-			print(mergedsub)
 		return([treeid,mergedsubtemp.loc[:,hmms_for_alignment],hmms_for_alignment,mergedsubtemp.index])
 		#return([treeid,mergedsub,list(mergedsub.columns),mergedsub.index])
 
@@ -545,13 +542,11 @@ class treebuild:
 		# load in each msa and create a key for contig id	
 		files = os.listdir('%s/alignments'%(self.tmpdir))
 		files = [self.tmpdir + '/alignments/' + x for x in files if '.aligned.trimmed' in x]
-		print(files)
 		if len(files) == 0:
 			print('No alignments found, this might be an I/O issue -- trying again...')
 			os.system('sleep 15')
 			files = os.listdir('%s/alignments'%(self.tmpdir))
 			files = [self.tmpdir + '/alignments/' + x for x in files if '.aligned.trimmed' in x]
-			print(files)
 		msas = {}
 		for f in files:
 			hmm = f.split('/')[-1].replace('.fa.aligned.trimmed','')
