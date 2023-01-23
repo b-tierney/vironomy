@@ -574,7 +574,8 @@ class treebuild:
 						val = val.replace("'","_")
 						m = msas[val]
 						#print(m)
-						try:	print(c)
+						try:	
+							print(c)
 							print(m[0].keys())
 							alignment = alignment + str(m[0][c].seq)
 						except:
