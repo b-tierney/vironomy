@@ -180,8 +180,6 @@ class treebuild:
 				alltrees.extend(seed)
 				treeoptions = treeoptions[treeoptions.loc[:,'indval']!=indval]
 				while True:
-					print(treeoptions)
-					print(treeoptions.shape)
 					if treeoptions.shape[0] == 0:
 						break
 					if len(queriesleft) == 0:	
@@ -485,12 +483,12 @@ class treebuild:
 						w.write(str(seqr) + '\n')
 						temp.append('.'.join(seqidr.split('.')[:-1])+ '_reference')
 			hmmcontig[hmm] = temp
-		#self.alignmentcontigs = {}
-		#for t in trees:
-		#	hmms = self.hmms_to_align[t]
-		#	contigs = [hmmcontig[x] for x in hmms]
-		#	contigs = list(set([item for sublist in contigs for item in sublist]))
-			#self.alignmentcontigs[t] = contigs
+		self.alignmentcontigs = {}
+		for t in trees:
+			hmms = self.hmms_to_align[t]
+			contigs = [hmmcontig[x] for x in hmms]
+			contigs = list(set([item for sublist in contigs for item in sublist]))
+			self.alignmentcontigs[t] = contigs
 		print('	All genes have been written to file and we are ready to run alignments.')
 		return([trees,self.alignmentcontigs])
 
@@ -571,11 +569,8 @@ class treebuild:
 					for val in hmms_contig:
 						val = val.replace("'","_")
 						m = msas[val]
-						#print(m)
-						try:	
-							print(c)
-							print(m[0].keys())
-							alignment = alignment + str(m[0][c].seq)
+						try:
+							alignment = alignment + str(m[0][c[1:]].seq)
 						except:
 							alignment = alignment + '-'*int(m[1])
 					w.write('>' + c + '\n')
