@@ -416,7 +416,7 @@ class treebuild:
 		pool = Pool(self.threads)  
 		treeout = pool.map(self.parallel_hmm_hunting, range(0,len(self.finaltrees))) 
 		pool.close()
-		short = [x[3] for x in treeout if len(x)<self.smallesttreesize]
+		short = [x[3] for x in treeout if len(x[3])<self.smallesttreesize]
 		if len(short) == len(treeout):
 			print('	None of your trees have enough genomes! Try reducing the required number of overlapping HMMs.')
 			quit()
