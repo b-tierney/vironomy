@@ -389,9 +389,6 @@ class treebuild:
 		contigcoverage.extend(list(set(list(mergedsub.index))))
 		while True:
 			i=mergedsub.columns[0]
-			print(i)
-			print(mergedsub.shape)
-			print(mergedsubtemp.shape)
 			col = mergedsub.loc[:,i]
 			mergedsub = mergedsub.drop(i,axis=1)
 			col = col[col>0].index
@@ -412,6 +409,7 @@ class treebuild:
 			sums = mergedsub.sum()
 			tokeep = sums[sums>0].sort_values(ascending=False).index
 			mergedsub = mergedsub.loc[:,tokeep]
+			print(mergedsub)
 		return([treeid,mergedsubtemp.loc[:,hmms_for_alignment],hmms_for_alignment,mergedsubtemp.index])
 		#return([treeid,mergedsub,list(mergedsub.columns),mergedsub.index])
 
