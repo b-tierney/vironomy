@@ -451,7 +451,7 @@ class treebuild:
 			# load genbank reference data based on HMMs
 			genbankorfs_loaded = SeqIO.to_dict(SeqIO.parse(str(self.genbankorfs), "fasta"))
 			genbankannos = pd.read_csv(str(self.genbankannos),header=None,index_col=0,sep='\t')
-			genbankannos['contigid'] = (genbankannos).index.str.rsplit('.', n=1).str[0]
+			genbankannos['contigid'] = (genbankannos).index.str.rsplit('.', n=1).str[0] + '_reference'
 			genbankannos = genbankannos[genbankannos['contigid'].isin(self.referencecontigsall)]
 			genbankannos = genbankannos.drop_duplicates(['contigid',1])
 			hmmvals = [x.replace("'","_") for x in genbankannos.iloc[:,0]]
@@ -460,8 +460,7 @@ class treebuild:
 		# load in and subset the query orfs 
 		queryorfs_loaded = SeqIO.to_dict(SeqIO.parse(str(self.queryorfs), "fasta"))
 		queryannos = pd.read_csv(str(self.queryannos),header=None,index_col=0,sep='\t')
-		queryannos['contigid'] = (queryannos).index.str.rsplit('.', n=1).str[0]
-		print(queryannos)
+		queryannos['contigid'] = (queryannos).index.str.rsplit('.', n=1).str[0] + '_qyery'
 		queryannos = queryannos[queryannos['contigid'].isin(self.queries)]
 		queryannos = queryannos.drop_duplicates(['contigid',1])
 		hmmvals = [x.replace("'","_") for x in queryannos.iloc[:,0]]
