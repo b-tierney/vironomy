@@ -577,7 +577,7 @@ class treebuild:
 							alignment = alignment + str(m[0][c[1:]].seq)
 						except:
 							alignment = alignment + '-'*int(m[1])
-					w.write('>' + c + '\n')
+					w.write(c + '\n')
 					w.write(str(alignment) + '\n')
 
 	def build_tree(self,trees):
