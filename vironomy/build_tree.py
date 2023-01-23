@@ -574,7 +574,7 @@ class treebuild:
 					for val in hmms_contig:
 						val = val.replace("'","_")
 						m = msas[val]
-						print(m)
+						#print(m)
 						try:
 							alignment = alignment + str(m[0][c].seq)
 						except:
