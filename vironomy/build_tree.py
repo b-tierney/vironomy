@@ -553,6 +553,12 @@ class treebuild:
 			msa = SeqIO.to_dict(SeqIO.parse(str(f), "fasta"))
 			msalen = len(msa[list(msa.keys())[0]])
 			msas[hmm] = [msa,msalen]
+		with open('alignmentcontigs.pickle', 'wb') as handle:
+    			pickle.dump(self.alignmentcontigs, handle, protocol=pickle.HIGHEST_PROTOCOL)
+		with open('hmmstoalign.pickle', 'wb') as handle:
+    			pickle.dump(self.hmms_to_align, handle, protocol=pickle.HIGHEST_PROTOCOL)
+		with open('msas.pickle', 'wb') as handle:
+    			pickle.dump(msas, handle, protocol=pickle.HIGHEST_PROTOCOL)
 		for t in self.alignmentcontigs.keys(): 
 			aligndir = self.tmpdir + '/' + t
 			os.system('mkdir -p %s'%aligndir)
