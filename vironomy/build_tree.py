@@ -130,6 +130,8 @@ class treebuild:
 
 	def split_denovo_tree(self):
 		merged = self.query_markermatrix
+		foo = [x + '_query' for x in list(merged.index)]
+		merged.index=foo
 		# remove hmms with too low a prevalence
 		#merged = self.filter_merged_matrix(merged)
 		merged = merged[merged.columns[merged.sum()>=self.global_min_hmm_prevalence]]
@@ -265,6 +267,11 @@ class treebuild:
 		refdb_sub  = self.refdb.loc[tokeep,:]
 		self.referencecontigsall = tokeep
 		refdb_sub[refdb_sub == -1] = 0
+		foo = [x + '_reference' for x in list(refdb_sub.index)]
+		refdb_sub.index=foo
+		self.query_markermatrix
+		foo = [x + '_query' for x in list(self.query_markermatrix.index)]
+		self.query_markermatrix.index = foo
 		merged = pd.concat([refdb_sub,self.query_markermatrix])
 		merged = merged[merged.columns[merged.sum()>=self.global_min_hmm_prevalence]]
 		initialshape = merged.shape[0]
@@ -488,13 +495,13 @@ class treebuild:
 						w.write('.'.join(seqidr.split('.')[:-1])+ '_reference' + '\n')
 						w.write(str(seqr) + '\n')
 						temp.append('.'.join(seqidr.split('.')[:-1])+ '_reference')
-			hmmcontig[hmm] = temp
-		self.alignmentcontigs = {}
-		for t in trees:
-			hmms = self.hmms_to_align[t]
-			contigs = [hmmcontig[x] for x in hmms]
-			contigs = list(set([item for sublist in contigs for item in sublist]))
-			self.alignmentcontigs[t] = contigs
+		#	hmmcontig[hmm] = temp
+		#self.alignmentcontigs = {}
+		#for t in trees:
+		#	hmms = self.hmms_to_align[t]
+		#	contigs = [hmmcontig[x] for x in hmms]
+		#	contigs = list(set([item for sublist in contigs for item in sublist]))
+		#	self.alignmentcontigs[t] = contigs
 		print('	All genes have been written to file and we are ready to run alignments.')
 		return([trees,self.alignmentcontigs])
 
@@ -564,21 +571,19 @@ class treebuild:
 			aligndir = self.tmpdir + '/' + t
 			os.system('mkdir -p %s'%aligndir)
 			contigs = self.alignmentcontigs[t]
-			print(len(contigs))
 			with open(aligndir + '/contig_alignment_all_hmms.msa','w') as w:
 				for c in contigs:
+					print(c)
 					alignment = ''
-					#c = c.replace('_query','')
-					#c = c.replace('_reference','')
 					hmms_contig = self.hmms_to_align[t]
 					for val in hmms_contig:
 						val = val.replace("'","_")
 						m = msas[val]
 						try:
-							alignment = alignment + str(m[0][c[1:]].seq)
+							alignment = alignment + str(m[0][c].seq)
 						except:
 							alignment = alignment + '-'*int(m[1])
-					w.write(c + '\n')
+					w.write('>' + c + '\n')
 					w.write(str(alignment) + '\n')
 
 	def build_tree(self,trees):
