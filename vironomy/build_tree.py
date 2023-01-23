@@ -538,10 +538,10 @@ class treebuild:
 		#		break
 		#	for file in self.alignpaths:
 		#		self.paralign(file)
-		#os.system('while read p; do echo $p; famsa -t %s "$p" "$p".aligned;done<%s'%(self.threads,self.tmpdir + '/orflocs'))
+		os.system('while read p; do echo $p; famsa -t %s "$p" "$p".aligned;done<%s'%(self.threads,self.tmpdir + '/orflocs'))
 		#os.system('cat %s | parallel -j %s famsa -t 1 {} {}.aligned &>/dev/null'%(self.tmpdir + '/orflocs',self.threads))
 		print('	Trimming alignments')
-		#os.system('cat %s | parallel -j %s trimal -in {}.aligned -out {}.aligned.trimmed -gt .3 -cons 50 &>/dev/null'%(self.tmpdir + '/orflocs',self.threads))
+		os.system('cat %s | parallel -j %s trimal -in {}.aligned -out {}.aligned.trimmed -gt .3 -cons 50 &>/dev/null'%(self.tmpdir + '/orflocs',self.threads))
 		print('	Alignments done')
 
 	def combine_msas(self):
