@@ -147,7 +147,7 @@ class treebuild:
 		# split into separate trees if necessary
 		self.query_markermatrix = self.query_markermatrix.loc[finalqueries,]
 		queries = list(set(list(self.query_markermatrix.index)))
-		if(self.min_marker_overlap_for_tree>0):
+		if self.min_marker_overlap_for_tree>0:
 			overlaps = merged.dot(merged.T)
 			querydist = overlaps.loc[queries,:]
 			querydist_rawnum = overlaps.loc[queries,:]
@@ -268,23 +268,33 @@ class treebuild:
 		self.referencecontigsall = tokeep
 		refdb_sub[refdb_sub == -1] = 0
 		merged = pd.concat([refdb_sub,self.query_markermatrix])
-		merged = self.filter_merged_matrix(merged)
-		print("	Building trees with a total of possible %s HMMs."%merged.shape[1])
-		# split into separate trees if necessary
-		print('	Finding optimal trees.')
-		queries = list(set(list(self.query_markermatrix.index)))
-		if(self.min_marker_overlap_for_tree>0):
+		merged = merged[merged.columns[merged.sum()>=self.global_min_hmm_prevalence]]
+		initialshape = merged.shape[0]
+		initialqueries = list(merged.index)
+		merged = merged[merged.sum(axis=1) > 0]
+		finalshape = merged.shape[0]
+		finalqueries = list(merged.index)
+		dropped = list(set(initialqueries) - set(finalqueries))
+		print('	Dropping %s queries because they contained only HMMs below the global prevalence threshold (set with -x).'%(initialshape - finalshape))
+		with open('%s/failed_queries_global_hmm_threshold.txt'%self.outdir,'w') as w:
+			for line in dropped:
+				w.write(line+'\n')
+		if self.min_marker_overlap_for_tree>0:
 			overlaps = merged.dot(merged.T)
-			overlaps[overlaps<self.min_marker_overlap_for_tree]=0
-			overlaps[overlaps!=0]=1
-			treelist = []
-			#pool = Pool(self.threads)                         
-			#treelist = pool.map(self.generate_treelist, [[x,overlaps,] for x in overlaps.index]) 
-			#pool.close()
-			for x in overlaps.index:
-				print(x)
-				self.generate_treelist([x,overlaps])
+			querydist = overlaps.loc[queries,:]
+			querydist_rawnum = overlaps.loc[queries,:]
+			querydist[querydist<=self.min_marker_overlap_for_tree]=0
+			querydist[querydist!=0]=1
+			#treelist = []
+			pool = Pool(self.threads)                         
+			treelist = pool.map(self.generate_treelist, [[x,querydist,querydist_rawnum] for x in querydist.index]) 
+			pool.close()
+			#for x in querydist.index:
+			#	print(x)
+			#	treelist.append(self.generate_treelist([x,querydist,querydist_rawnum]))
+			treelist.sort()
 			treelist = list(treelist for treelist,_ in itertools.groupby(treelist))
+			treelist.reverse()
 			print('	Identified %s potential trees, filtering them down.'%len(treelist))
 			queriesleft = list(set(queries))
 			finaltrees = []
@@ -302,36 +312,35 @@ class treebuild:
 				alltrees.extend(seed)
 				treeoptions = treeoptions[treeoptions.loc[:,'indval']!=indval]
 				while True:
+					if treeoptions.shape[0] == 0:
+						break
 					if len(queriesleft) == 0:	
 						break
-					#pool = Pool(self.threads)
-					#inputlist = [[alltrees,x] for x in list(treeoptions[0])]
-					#jacout = pool.map(self.par_jaccard, inputlist) 
-					#pool.close()
-					#treeoptions[4] = jacout
-					#treeoptions[4] = [self.jaccard(alltrees,x) for x in list(treeoptions[0])]
 					treeoptions[1] = [len(list(set(queriesleft) & set(x))) for x in list(treeoptions[0])]
 					treeoptions = treeoptions[treeoptions[1]>0]
 					treelistsorted = treeoptions.sort_values([1,2],ascending=False)
 					#treelistsorted = treeoptions[treeoptions[4] < treeoptions[4].quantile(.25)].sort_values([1,2],ascending=False)
 					try:
 						t = list(treelistsorted[0])[0]
+						#### ADD A LINE THAT CHECKS FOR QUERIES ALREADY COVERED
+						indval = list(treelistsorted.loc[:,'indval'])[0]
 						if self.non_redundant_trees == True:
 							t = [x for x in t if x in queriesleft]
 							if len(t) == 0:
 								treeoptions = treeoptions[treeoptions.loc[:,'indval']!=indval]
 								continue
-						indval = list(treelistsorted.loc[:,'indval'])[0]
 						done = list(set(t).intersection(set(queriesleft)))
 						queriesleft = set(queriesleft) - set(done)
 					except:
-						print('%s queries are not going to placed on trees based on your provided parameters (e.g., they lack the requisite HMM overlaps). Going to write their IDs to a failed_trees.txt file in the output directory.')
+						print('An additional %s queries are not going to placed on trees based on your provided parameters (e.g., they lack the requisite HMM overlaps). Going to write their IDs to a failed_trees.txt file in the output directory.'%len(queriesleft))
 						queriesleft = list(queriesleft)
 						with open('%s/failed_trees.txt'%self.outdir,'w') as w:
 							for q in queriesleft:
 								w.write(q + '\n')
 						break
 					if len(done)>0:
+						if len(t) == 0:
+							continue
 						finaltrees.append(t)
 						alltrees.extend(t)
 						treeoptions = treeoptions[treeoptions.loc[:,'indval']!=indval]
