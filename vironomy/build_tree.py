@@ -82,7 +82,7 @@ class treebuild:
 		potentialtree = list(querydist_sub[querydist_sub>0].index)
 		print('lengths')
 		print(len(potentialtree))
-		foo = querydist_sub[list(set(querydist_sub.columns) & set(querydist_sub.index))]
+		foo = querydist[list(set(potentialtree) & set(potentialtree))]
 		foobar = foo.sum().sort_values(ascending=False)
 		foobar = foobar[foobar==foobar.shape[0]]
 		potentialtree = list(foobar.index)
