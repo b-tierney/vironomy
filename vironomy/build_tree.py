@@ -80,11 +80,19 @@ class treebuild:
 		else:
 			querydist_sub = querydist.loc[q]		
 		potentialtree = list(querydist_sub[querydist_sub>0].index)
+		print('lengths')
+		print(len(potentialtree))
+		foo = querydist_sub[list(set(querydist_sub.columns) & set(querydist_sub.index))]
+		foobar = foo.sum().sort_values(ascending=False)
+		foobar = foobar[foobar==foobar.shape[0]]
+		potentialtree = list(foobar.index)
+		print(len(potentialtree))
 		querydist_rawnum_sub = querydist_rawnum.loc[potentialtree,potentialtree]
 		maxval = int(self.min_marker_overlap_for_tree) + int(self.max_marker_overlap_range_for_tree)
 		querydist_rawnum_sub[querydist_rawnum_sub<=self.min_marker_overlap_for_tree]=0
 		querydist_rawnum_sub[querydist_rawnum_sub>maxval]=0
 		potentialtree = list(querydist_rawnum_sub[querydist_rawnum_sub>0].index)
+		print(len(potentialtree))
 		return(potentialtree)
 
 	# this function iterates through HMMS -- starting with the most common, and breaks when all queries are covered to a given hmm prev threshold 
