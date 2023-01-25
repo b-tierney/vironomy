@@ -6,6 +6,7 @@ import pandas as pd
 import scipy
 import itertools
 import pickle
+import numpy as np
 from collections import Counter
 from Bio import SeqIO
 from sklearn.metrics.pairwise import pairwise_distances
