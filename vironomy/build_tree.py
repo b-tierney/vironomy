@@ -17,7 +17,7 @@ import subprocess
 
 class treebuild:
 
-	def __init__(self,tree_sorting_mode,non_redundant_trees,global_min_hmm_prevalence,max_marker_overlap_range_for_tree,smallesttreesize,taxmap,force,batch,distances,query_markermatrix,ref_markermatrix,treetype,max_nodes_per_query,min_marker_overlap_with_query,min_marker_overlap_for_tree,genbankannos,genbankorfs,queryorfs,queryannos,tree_algorithm,tmpdir,outdir,threads,bootstrapnum):
+	def __init__(self,tree_sorting_mode,min_proportion_shared_hmm,non_redundant_trees,global_min_hmm_prevalence,max_marker_overlap_range_for_tree,smallesttreesize,taxmap,force,batch,distances,query_markermatrix,ref_markermatrix,treetype,max_nodes_per_query,min_marker_overlap_with_query,min_marker_overlap_for_tree,genbankannos,genbankorfs,queryorfs,queryannos,tree_algorithm,tmpdir,outdir,threads,bootstrapnum):
 		self.treetype = treetype
 		self.smallesttreesize = smallesttreesize
 		self.taxmap = taxmap
@@ -42,6 +42,7 @@ class treebuild:
 		self.bootstrapnum = bootstrapnum
 		self.tree_sorting_mode = tree_sorting_mode
 		self.non_redundant_trees = non_redundant_trees
+		self.min_proportion_shared_hmm = min_proportion_shared_hmm
 		os.system('mkdir -p %s'%self.tmpdir)
 		os.system('mkdir -p %s'%self.outdir)
 		print('<<<<<< STARTING TREE CONSTRUCTION >>>>>>>')
@@ -82,11 +83,19 @@ class treebuild:
 		potentialtree = list(querydist_sub[querydist_sub>0].index)
 		print('lengths')
 		print(len(potentialtree))
-		foo = querydist[list(set(potentialtree) & set(potentialtree))]
+		foo = querydist.loc[potentialtree,potentialtree]
+		foo = foo.loc[foo.index!=q,foo.columns!=q]
+		foo = foo.where(np.triu(np.ones(foo.shape)).astype(np.bool_))
+		foo = foo.stack().reset_index()
+		foo.columns = ['Row','Column','Value']
+		foo = foo[foo.Value>0]
+		potentialtree = list(set(foo.Row))
+		potentialtree.append(q)
+		foo = querydist.loc[potentialtree,potentialtree]
 		foobar = foo.sum().sort_values(ascending=False)
-		foobar = foobar[foobar==foobar.shape[0]]
+		minoverlaps = len(foobar)*float(self.min_proportion_shared_hmm)
+		foobar = foobar[foobar>=minoverlaps]
 		potentialtree = list(foobar.index)
-		print(len(potentialtree))
 		querydist_rawnum_sub = querydist_rawnum.loc[potentialtree,potentialtree]
 		maxval = int(self.min_marker_overlap_for_tree) + int(self.max_marker_overlap_range_for_tree)
 		querydist_rawnum_sub[querydist_rawnum_sub<=self.min_marker_overlap_for_tree]=0
