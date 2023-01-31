@@ -170,14 +170,14 @@ class treebuild:
 		queries = list(set(list(self.query_markermatrix.index)))
 		if self.min_marker_overlap_for_tree>0:
 			if self.tree_splitting_mode=='hierarchical':
-				bar = linkage(query_markermatrix,method=self.linkagemethod)
-				a = query_markermatrix.index.tolist()
+				bar = linkage(self.query_markermatrix,method=self.linkagemethod)
+				a = self.query_markermatrix.index.tolist()
 				b = [x[0] for x in cluster.hierarchy.cut_tree(bar,height=np.quantile(bar,self.cutpoint)).tolist()]
 				c = pd.DataFrame.from_dict(Counter(b),orient='index')
 				out = pd.DataFrame({'contigid': a,'cluster':b})
 				out = pd.merge(out,c,right_index=True,left_on='cluster',how='left')
 				out.columns = ['contigid','cluster','count']
-				out = out[out.loc[:,'count']>10]
+				out = out[out.loc[:,'count']>self.smallesttreesize]
 				finaltrees = out.groupby('cluster').agg(pd.Series.tolist).contigid.tolist()
 			else:
 				overlaps = merged.dot(merged.T)
@@ -298,14 +298,14 @@ class treebuild:
 				w.write(line+'\n')
 		if self.min_marker_overlap_for_tree>0:
 			if self.tree_splitting_mode=='hierarchical':
-				bar = linkage(query_markermatrix,method=self.linkagemethod)
-				a = query_markermatrix.index.tolist()
+				bar = linkage(self.query_markermatrix,method=self.linkagemethod)
+				a = self.query_markermatrix.index.tolist()
 				b = [x[0] for x in cluster.hierarchy.cut_tree(bar,height=np.quantile(bar,self.cutpoint)).tolist()]
 				c = pd.DataFrame.from_dict(Counter(b),orient='index')
 				out = pd.DataFrame({'contigid': a,'cluster':b})
 				out = pd.merge(out,c,right_index=True,left_on='cluster',how='left')
 				out.columns = ['contigid','cluster','count']
-				out = out[out.loc[:,'count']>10]
+				out = out[out.loc[:,'count']>self.smallesttreesize]
 				finaltrees = out.groupby('cluster').agg(pd.Series.tolist).contigid.tolist()
 			else:
 				overlaps = merged.dot(merged.T)
