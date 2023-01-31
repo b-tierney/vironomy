@@ -8,6 +8,8 @@ import itertools
 import pickle
 import numpy as np
 from collections import Counter
+from scipy import cluster
+from scipy.cluster.hierarchy import dendrogram, linkage
 from Bio import SeqIO
 from sklearn.metrics.pairwise import pairwise_distances
 from multiprocessing import Pool
