@@ -18,7 +18,7 @@ import subprocess
 
 class treebuild:
 
-	def __init__(self,tree_sorting_mode,min_proportion_shared_hmm,non_redundant_trees,global_min_hmm_prevalence,max_marker_overlap_range_for_tree,smallesttreesize,taxmap,force,batch,distances,query_markermatrix,ref_markermatrix,treetype,max_nodes_per_query,min_marker_overlap_with_query,min_marker_overlap_for_tree,genbankannos,genbankorfs,queryorfs,queryannos,tree_algorithm,tmpdir,outdir,threads,bootstrapnum):
+	def __init__(self,linkagemethod,treecutpoint,tree_splitting_mode,min_proportion_shared_hmm,non_redundant_trees,global_min_hmm_prevalence,max_marker_overlap_range_for_tree,smallesttreesize,taxmap,force,batch,distances,query_markermatrix,ref_markermatrix,treetype,max_nodes_per_query,min_marker_overlap_with_query,min_marker_overlap_for_tree,genbankannos,genbankorfs,queryorfs,queryannos,tree_algorithm,tmpdir,outdir,threads,bootstrapnum):
 		self.treetype = treetype
 		self.smallesttreesize = smallesttreesize
 		self.taxmap = taxmap
@@ -41,7 +41,9 @@ class treebuild:
 		self.batch = batch
 		self.threads = threads
 		self.bootstrapnum = bootstrapnum
-		self.tree_sorting_mode = tree_sorting_mode
+		self.tree_splitting_mode = tree_splitting_mode
+		self.cutpoint = float(treecutpoint)
+		self.linkagemethod = linkagemethod
 		self.non_redundant_trees = non_redundant_trees
 		self.min_proportion_shared_hmm = min_proportion_shared_hmm
 		os.system('mkdir -p %s'%self.tmpdir)
@@ -165,29 +167,39 @@ class treebuild:
 		self.query_markermatrix = self.query_markermatrix.loc[finalqueries,]
 		queries = list(set(list(self.query_markermatrix.index)))
 		if self.min_marker_overlap_for_tree>0:
-			overlaps = merged.dot(merged.T)
-			querydist = overlaps.loc[queries,:]
-			querydist_rawnum = overlaps.loc[queries,:]
-			querydist[querydist<=self.min_marker_overlap_for_tree]=0
-			querydist[querydist!=0]=1
-			#treelist = []
-			pool = Pool(self.threads)                         
-			treelist = pool.map(self.generate_treelist, [[x,querydist,querydist_rawnum] for x in querydist.index]) 
-			pool.close()
-			#for x in querydist.index:
-			#	treelist.append(self.generate_treelist([x,querydist,querydist_rawnum]))
-			treelist.sort()
-			treelist = list(treelist for treelist,_ in itertools.groupby(treelist))
-			treelist.reverse()
-			print('	Identified %s potential trees, filtering them down.'%len(treelist))
-			queriesleft = list(set(queries))
-			finaltrees = []
-			alltrees = []	
-			treeoptions = pd.DataFrame([treelist,[len(list(set(x) & set(queriesleft))) for x in treelist],[len(x) for x in treelist],[(list(set(x) & set(queriesleft))) for x in treelist]]).T
-			treeoptions=treeoptions[treeoptions[2]>0]
-			treeoptions['indval'] = treeoptions.index
-			treelistsorted = treeoptions.sort_values([1,2],ascending=False)
-			if self.tree_sorting_mode=='distance':
+			if self.tree_splitting_mode=='hierarchical':
+				bar = linkage(query_markermatrix,method=self.linkagemethod)
+				a = query_markermatrix.index.tolist()
+				b = [x[0] for x in cluster.hierarchy.cut_tree(bar,height=np.quantile(bar,self.cutpoint)).tolist()]
+				c = pd.DataFrame.from_dict(Counter(b),orient='index')
+				out = pd.DataFrame({'contigid': a,'cluster':b})
+				out = pd.merge(out,c,right_index=True,left_on='cluster',how='left')
+				out.columns = ['contigid','cluster','count']
+				out = out[out.loc[:,'count']>10]
+				finaltrees = out.groupby('cluster').agg(pd.Series.tolist).contigid.tolist()
+			else:
+				overlaps = merged.dot(merged.T)
+				querydist = overlaps.loc[queries,:]
+				querydist_rawnum = overlaps.loc[queries,:]
+				querydist[querydist<=self.min_marker_overlap_for_tree]=0
+				querydist[querydist!=0]=1
+				#treelist = []
+				pool = Pool(self.threads)                         
+				treelist = pool.map(self.generate_treelist, [[x,querydist,querydist_rawnum] for x in querydist.index]) 
+				pool.close()
+				#for x in querydist.index:
+				#	treelist.append(self.generate_treelist([x,querydist,querydist_rawnum]))
+				treelist.sort()
+				treelist = list(treelist for treelist,_ in itertools.groupby(treelist))
+				treelist.reverse()
+				print('	Identified %s potential trees, filtering them down.'%len(treelist))
+				queriesleft = list(set(queries))
+				finaltrees = []
+				alltrees = []	
+				treeoptions = pd.DataFrame([treelist,[len(list(set(x) & set(queriesleft))) for x in treelist],[len(x) for x in treelist],[(list(set(x) & set(queriesleft))) for x in treelist]]).T
+				treeoptions=treeoptions[treeoptions[2]>0]
+				treeoptions['indval'] = treeoptions.index
+				treelistsorted = treeoptions.sort_values([1,2],ascending=False)
 				seed = list(treelistsorted.loc[:,0])[0]
 				indval = list(treelistsorted['indval'])[0]
 				done = list(set(seed).intersection(set(queriesleft)))
@@ -228,14 +240,6 @@ class treebuild:
 						finaltrees.append(t)
 						alltrees.extend(t)
 						treeoptions = treeoptions[treeoptions.loc[:,'indval']!=indval]
-			if self.tree_sorting_mode=='fast':				
-				for t in treelistsorted[0]:
-					done = list(set(t).intersection(set(queriesleft)))
-					queriesleft = set(queriesleft) - set(done)
-					if len(done)>0:
-						finaltrees.append(t)
-					if len(queriesleft) == 0:	
-						break
 			self.finaltrees = finaltrees
 		else:
 			self.finaltrees = [list(set(list(merged.index)))]
@@ -291,30 +295,40 @@ class treebuild:
 			for line in dropped:
 				w.write(line+'\n')
 		if self.min_marker_overlap_for_tree>0:
-			overlaps = merged.dot(merged.T)
-			querydist = overlaps.loc[queries,:]
-			querydist_rawnum = overlaps.loc[queries,:]
-			querydist[querydist<=self.min_marker_overlap_for_tree]=0
-			querydist[querydist!=0]=1
-			#treelist = []
-			pool = Pool(self.threads)                         
-			treelist = pool.map(self.generate_treelist, [[x,querydist,querydist_rawnum] for x in querydist.index]) 
-			pool.close()
-			#for x in querydist.index:
-			#	print(x)
-			#	treelist.append(self.generate_treelist([x,querydist,querydist_rawnum]))
-			treelist.sort()
-			treelist = list(treelist for treelist,_ in itertools.groupby(treelist))
-			treelist.reverse()
-			print('	Identified %s potential trees, filtering them down.'%len(treelist))
-			queriesleft = list(set(queries))
-			finaltrees = []
-			alltrees = []	
-			treeoptions = pd.DataFrame([treelist,[len(list(set(x) & set(queriesleft))) for x in treelist],[len(x) for x in treelist],[(list(set(x) & set(queriesleft))) for x in treelist]]).T
-			treeoptions=treeoptions[treeoptions[2]>0]
-			treeoptions['indval'] = treeoptions.index
-			treelistsorted = treeoptions.sort_values([1,2],ascending=False)
-			if self.tree_sorting_mode=='distance':
+			if self.tree_splitting_mode=='hierarchical':
+				bar = linkage(query_markermatrix,method=self.linkagemethod)
+				a = query_markermatrix.index.tolist()
+				b = [x[0] for x in cluster.hierarchy.cut_tree(bar,height=np.quantile(bar,self.cutpoint)).tolist()]
+				c = pd.DataFrame.from_dict(Counter(b),orient='index')
+				out = pd.DataFrame({'contigid': a,'cluster':b})
+				out = pd.merge(out,c,right_index=True,left_on='cluster',how='left')
+				out.columns = ['contigid','cluster','count']
+				out = out[out.loc[:,'count']>10]
+				finaltrees = out.groupby('cluster').agg(pd.Series.tolist).contigid.tolist()
+			else:
+				overlaps = merged.dot(merged.T)
+				querydist = overlaps.loc[queries,:]
+				querydist_rawnum = overlaps.loc[queries,:]
+				querydist[querydist<=self.min_marker_overlap_for_tree]=0
+				querydist[querydist!=0]=1
+				#treelist = []
+				pool = Pool(self.threads)                         
+				treelist = pool.map(self.generate_treelist, [[x,querydist,querydist_rawnum] for x in querydist.index]) 
+				pool.close()
+				#for x in querydist.index:
+				#	print(x)
+				#	treelist.append(self.generate_treelist([x,querydist,querydist_rawnum]))
+				treelist.sort()
+				treelist = list(treelist for treelist,_ in itertools.groupby(treelist))
+				treelist.reverse()
+				print('	Identified %s potential trees, filtering them down.'%len(treelist))
+				queriesleft = list(set(queries))
+				finaltrees = []
+				alltrees = []	
+				treeoptions = pd.DataFrame([treelist,[len(list(set(x) & set(queriesleft))) for x in treelist],[len(x) for x in treelist],[(list(set(x) & set(queriesleft))) for x in treelist]]).T
+				treeoptions=treeoptions[treeoptions[2]>0]
+				treeoptions['indval'] = treeoptions.index
+				treelistsorted = treeoptions.sort_values([1,2],ascending=False)
 				seed = list(treelistsorted.loc[:,0])[0]
 				indval = list(treelistsorted['indval'])[0]
 				done = list(set(seed).intersection(set(queriesleft)))
@@ -355,14 +369,6 @@ class treebuild:
 						finaltrees.append(t)
 						alltrees.extend(t)
 						treeoptions = treeoptions[treeoptions.loc[:,'indval']!=indval]
-			if self.tree_sorting_mode=='fast':				
-				for t in treelistsorted[0]:
-					done = list(set(t).intersection(set(queriesleft)))
-					queriesleft = set(queriesleft) - set(done)
-					if len(done)>0:
-						finaltrees.append(t)
-					if len(queriesleft) == 0:	
-						break
 			self.finaltrees = finaltrees
 		else:
 			self.finaltrees = [list(set(list(merged.index)))]
