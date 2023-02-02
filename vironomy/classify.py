@@ -187,7 +187,7 @@ class queryset:
 			self.fulltaxinfo_secondary = pd.concat(fulltaxinfo_secondary).reset_index(drop = True)
 			cols = ['query','genbank_contigid','taxonomy','distance_from_reference','found_by']
 			self.fulltaxinfo_secondary = self.fulltaxinfo_secondary.loc[:,cols]
-			taxdat = [';'.join(x.split(';')[:self.taxnum]) for x in self.fulltaxinfo_secondary.loc[:,"taxonomy"].tolist()]
+			taxdat = [';'.join(x.split(';')[:(self.taxnum+1)]) for x in self.fulltaxinfo_secondary.loc[:,"taxonomy"].tolist()]
 			self.fulltaxinfo_secondary.loc[:,'taxonomy'] = taxdat
 			self.fulltaxinfo_secondary.to_csv(self.outputdir + '/secondary_clustering_taxonomic_report.csv')
 		print('<<<<<< CLASSIFICATION FINISHED >>>>>>>')
