@@ -117,6 +117,7 @@ class queryset:
 		count = 0
 		for m in self.taxadb.keys():
 			initial_annotation = self.taxadb[m]
+			initial_annotation.to_csv('TEMP3.csv')
 			singles = []
 			if len(list(initial_annotation.genbank_contigid)) == 1:
 				singles.append([m,list(initial_annotation.genbank_contigid)[0],list(initial_annotation.taxonomy)[0],list(initial_annotation.distance_from_reference)[0],'Primary clustering'])
