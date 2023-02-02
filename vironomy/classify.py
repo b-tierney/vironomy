@@ -126,7 +126,9 @@ class queryset:
 				continue
 			count +=1
 			# compute distances for top hitting groups
+			self.markermatrix.to_csv('TEMP1.csv')
 			m_sub = self.markermatrix[self.markermatrix.index == m]
+			full_database.to_csv('TEMP2.csv')
 			db_sub=full_database[full_database.index.isin(list(initial_annotation.genbank_contigid))]
 			distances = pd.DataFrame(pairwise_distances(m_sub, db_sub,n_jobs = self.threads))
 			distances.columns=db_sub.index
