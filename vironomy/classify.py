@@ -11,10 +11,11 @@ from sklearn.metrics.pairwise import pairwise_distances
 
 class queryset:
 
-	def __init__(self,fastafile,markermatrixref,taxmapping,subcluster,fulldb,hitstoreport,hmmpath,tmpdir,threads,evaluecutoff,outputdir):
+	def __init__(self,fastafile,markermatrixref,taxmapping,subcluster,fulldb,hitstoreport,hmmpath,tmpdir,threads,evaluecutoff,outputdir,taxonomiclevel):
 		self.sequences = fastafile
 		self.subcluster = subcluster
 		self.fulldb = fulldb
+		self.taxonomiclevel = taxonomiclevel
 		self.hitstoreport = hitstoreport
 		self.referencedbs, self.taxmap = import_reference_dbs(markermatrixref,taxmapping)
 		self.hmmpath = hmmpath
@@ -24,6 +25,18 @@ class queryset:
 		self.evaluecutoff = evaluecutoff
 		os.system('mkdir -p %s'%tmpdir)
 		os.system('mkdir -p %s'%outputdir)
+		if self.taxonomiclevel == 'Phylum':
+			self.taxnum = 0
+		if self.taxonomiclevel == 'Class':
+			self.taxnum = 1
+		if self.taxonomiclevel == 'Order':
+			self.taxnum = 2
+		if self.taxonomiclevel == 'Family':
+			self.taxnum = 3
+		if self.taxonomiclevel == 'Genus':
+			self.taxnum = 4
+		if self.taxonomiclevel == 'Species':
+			self.taxnum = 5
 		print('<<<<<< STARTING CLASSIFICATION >>>>>>>')
 
 	def call_orfs(self):
@@ -157,16 +170,23 @@ class queryset:
 					temp.append('Multiple hits')
 			summarytax.append(temp)
 		self.simplifiedtaxa = pd.DataFrame(summarytax)
-		self.simplifiedtaxa.columns = ['query','Phylum','Class','Order','Family','Genus','Species']
+		collist = ['query','Phylum','Class','Order','Family','Genus','Species']
+		self.simplifiedtaxa.columns = collist
+		collist = collist[0:(self.taxnum+1)]
+		self.simplifiedtaxa = self.simplifiedtaxa.loc[:,collist]
 		self.simplifiedtaxa.to_csv(self.outputdir + '/simplified_taxonomy_report.csv')
 		self.fulltaxa = pd.concat(fulltaxinfo_primary).reset_index(drop = True)
 		cols = ['query','genbank_contigid','group','taxonomy','number_of_occurences_of_taxonomic_annotation_per_group','distance_from_reference']
 		self.fulltaxa = self.fulltaxa.loc[:,cols]
+		taxdat = [x.split(';')[self.taxnum] for x in self.fulltaxa.loc[:,"taxonomy"].tolist()]
+		self.fulltaxa.loc[:,'taxonomy'] = taxdat
 		self.fulltaxa.to_csv(self.outputdir + '/primary_clustering_taxonomic_report.csv')
 		if self.subcluster == True:
 			self.fulltaxinfo_secondary = pd.concat(fulltaxinfo_secondary).reset_index(drop = True)
 			cols = ['query','genbank_contigid','taxonomy','distance_from_reference','found_by']
 			self.fulltaxinfo_secondary = self.fulltaxinfo_secondary.loc[:,cols]
+			taxdat = [x.split(';')[self.taxnum] for x in self.fulltaxinfo_secondary.loc[:,"taxonomy"].tolist()]
+			self.fulltaxinfo_secondary.loc[:,'taxonomy'] = taxdat
 			self.fulltaxinfo_secondary.to_csv(self.outputdir + '/secondary_clustering_taxonomic_report.csv')
 		print('<<<<<< CLASSIFICATION FINISHED >>>>>>>')
 
