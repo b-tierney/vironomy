@@ -127,7 +127,7 @@ class queryset:
 			count +=1
 			# compute distances for top hitting groups
 			m_sub = self.markermatrix[self.markermatrix.index == m]
-			db_sub = full_database.loc[list(initial_annotation.genbank_contigid),:]
+			db_sub=full_database[full_database.index.isin(list(initial_annotation.genbank_contigid))]
 			distances = pd.DataFrame(pairwise_distances(m_sub, db_sub,n_jobs = self.threads))
 			distances.columns=db_sub.index
 			# take best hits as before and report top within group
