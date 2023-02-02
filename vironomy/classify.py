@@ -174,7 +174,7 @@ class queryset:
 		self.simplifiedtaxa = pd.DataFrame(summarytax)
 		collist = ['query','Phylum','Class','Order','Family','Genus','Species']
 		self.simplifiedtaxa.columns = collist
-		collist = collist[0:(self.taxnum+1)]
+		collist = collist[:(self.taxnum+2)]
 		self.simplifiedtaxa = self.simplifiedtaxa.loc[:,collist]
 		self.simplifiedtaxa.to_csv(self.outputdir + '/simplified_taxonomy_report.csv')
 		self.fulltaxa = pd.concat(fulltaxinfo_primary).reset_index(drop = True)
@@ -187,7 +187,7 @@ class queryset:
 			self.fulltaxinfo_secondary = pd.concat(fulltaxinfo_secondary).reset_index(drop = True)
 			cols = ['query','genbank_contigid','taxonomy','distance_from_reference','found_by']
 			self.fulltaxinfo_secondary = self.fulltaxinfo_secondary.loc[:,cols]
-			taxdat = [x.split(';')[self.taxnum] for x in self.fulltaxinfo_secondary.loc[:,"taxonomy"].tolist()]
+			taxdat = [';'.join(x.split(';')[:self.taxnum]) for x in self.fulltaxinfo_secondary.loc[:,"taxonomy"].tolist()]
 			self.fulltaxinfo_secondary.loc[:,'taxonomy'] = taxdat
 			self.fulltaxinfo_secondary.to_csv(self.outputdir + '/secondary_clustering_taxonomic_report.csv')
 		print('<<<<<< CLASSIFICATION FINISHED >>>>>>>')
