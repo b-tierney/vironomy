@@ -117,7 +117,6 @@ class queryset:
 		count = 0
 		for m in self.taxadb.keys():
 			initial_annotation = self.taxadb[m]
-			initial_annotation.to_csv('TEMP3.csv')
 			singles = []
 			if len(list(initial_annotation.genbank_contigid)) == 1:
 				singles.append([m,list(initial_annotation.genbank_contigid)[0],list(initial_annotation.taxonomy)[0],list(initial_annotation.distance_from_reference)[0],'Primary clustering'])
@@ -127,9 +126,7 @@ class queryset:
 				continue
 			count +=1
 			# compute distances for top hitting groups
-			self.markermatrix.to_csv('TEMP1.csv')
 			m_sub = self.markermatrix[self.markermatrix.index == m]
-			full_database.to_csv('TEMP2.csv')
 			db_sub=full_database[full_database.index.isin(list(initial_annotation.genbank_contigid))]
 			m_sub = m_sub.loc[:,m_sub.columns.isin(db_sub.columns)]
 			db_sub = db_sub.loc[:,db_sub.columns.isin(m_sub.columns)]
