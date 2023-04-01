@@ -11,7 +11,7 @@ from sklearn.metrics.pairwise import pairwise_distances
 
 class queryset:
 
-	def __init__(self,fastafile,markermatrixref,taxmapping,subcluster,fulldb,hitstoreport,hmmpath,tmpdir,threads,evaluecutoff,outputdir,taxonomiclevel):
+	def __init__(self,fastafile,markermatrixref,taxmapping,subcluster,fulldb,hitstoreport,hmmdb,hmmpath,tmpdir,threads,evaluecutoff,outputdir,taxonomiclevel):
 		self.sequences = fastafile
 		self.subcluster = subcluster
 		self.fulldb = fulldb
@@ -57,7 +57,7 @@ class queryset:
 		os.system("hmmsearch --tblout %s/query.pfam.tigrfam.annotations --cpu %s %s %s/query_orfs.faa >/dev/null"%(self.tmpdir,self.threads,self.hmmpath,self.outputdir))
 		print('	Parsing hmmsearch output.')
 		os.system("""tail -n +4 %s/query.pfam.tigrfam.annotations | head -n -10 | awk 'BEGIN{OFS="\t";} {print $1,$3,$5}' > "%s/query.pfam.tigrfam.annotations.cleaned" """%(self.tmpdir,self.outputdir))
-
+		
 	def parse_markers(self):
 		self.markermatrix = pd.read_csv("%s/query.pfam.tigrfam.annotations.cleaned"%(self.outputdir),header=None,sep='\t')
 		print('	Hmmsearch found %s hits across all samples.'%(self.markermatrix.shape[0]))
