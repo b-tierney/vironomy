@@ -53,7 +53,9 @@ def classify(inputs,dbdir,hmmdb,multicopy,outputdir,taxonomiclevel,hitstoreport,
 	if hmmdb == 'Default':
 		hmmpath = dbdir + '/single_copy_marker_db.hmm'
 	if hmmdb == 'NeoRdRp':
-		hmmpath = dbdir + '/NeoRdRp-HMM.v1.1.hmm.hmm'
+		hmmpath = dbdir + '/NeoRdRp-HMM.v1.1.hmm'
+	if hmmdb == 'cp77':
+		hmmpath = dbdir + '/cp77.hmm'
 	if multicopy:
 		multicopystatus = True
 	if not multicopy:
