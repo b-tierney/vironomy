@@ -11,8 +11,9 @@ from sklearn.metrics.pairwise import pairwise_distances
 
 class queryset:
 
-	def __init__(self,fastafile,markermatrixref,taxmapping,subcluster,fulldb,hitstoreport,hmmdb,hmmpath,tmpdir,threads,evaluecutoff,outputdir,taxonomiclevel):
+	def __init__(self,fastafile,multicopy,markermatrixref,taxmapping,subcluster,fulldb,hitstoreport,hmmdb,hmmpath,tmpdir,threads,evaluecutoff,outputdir,taxonomiclevel):
 		self.sequences = fastafile
+		self.multicopy = multicopy
 		self.subcluster = subcluster
 		self.fulldb = fulldb
 		self.taxonomiclevel = taxonomiclevel
@@ -66,10 +67,11 @@ class queryset:
 		self.markermatrix.columns = ['geneid','domain','evalue','contigid']
 		self.markermatrix = self.markermatrix.loc[:,['contigid','domain']]
 		intialsize=self.markermatrix.shape[0]
-		dups = list(self.markermatrix[self.markermatrix.duplicated()].index)
-		self.markermatrix = self.markermatrix.drop_duplicates()
-		if len(dups)>0:
-			print('	Dropped %s markers that turned out to be multi-copy...'%len(dups))
+		if not multicopy:
+			dups = list(self.markermatrix[self.markermatrix.duplicated()].index)
+			self.markermatrix = self.markermatrix.drop_duplicates()
+			if len(dups)>0:
+				print('	Dropped %s markers that turned out to be multi-copy...'%len(dups))
 		self.markermatrix['value'] = 1
 		self.markermatrix = pd.pivot(self.markermatrix,'contigid','domain',values='value')
 		self.markermatrix[self.markermatrix!=1]=0
