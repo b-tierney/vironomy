@@ -54,9 +54,13 @@ def classify(inputs,dbdir,hmmdb,multicopy,outputdir,taxonomiclevel,hitstoreport,
 		hmmpath = dbdir + '/single_copy_marker_db.hmm'
 	if hmmdb == 'NeoRdRp':
 		hmmpath = dbdir + '/NeoRdRp-HMM.v1.1.hmm.hmm'
+	if multicopy:
+		multicopystatus = True
+	if not multicopy:
+		multicopystatus = False
 	predictedgenesout = outputdir + '/query_orfs.faa' 
 	markerout = outputdir + '/query.pfam.tigrfam.annotations.cleaned' 	
-	data = queryset(fastafile = inputs,taxonomiclevel=taxonomiclevel,hitstoreport = hitstoreport,subcluster = subcluster,fulldb = fulldb,markermatrixref = markermatrixref,taxmapping = taxmap,hmmpath = hmmpath,threads = threads,evaluecutoff = evaluecutoff,tmpdir = tmpdir,outputdir = outputdir)
+	data = queryset(fastafile = inputs,taxonomiclevel=taxonomiclevel,multicopy = multicopystatus,hitstoreport = hitstoreport,subcluster = subcluster,fulldb = fulldb,markermatrixref = markermatrixref,taxmapping = taxmap,hmmpath = hmmpath,threads = threads,evaluecutoff = evaluecutoff,tmpdir = tmpdir,outputdir = outputdir)
 	if os.path.exists(predictedgenesout) and not force:
 		print('	ORF calling output exists, using these data. To regenerate, rename your output directory or run with the "--force" flag.')
 	if os.path.exists(predictedgenesout) == False or force:
