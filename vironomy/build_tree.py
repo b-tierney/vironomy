@@ -20,10 +20,11 @@ import subprocess
 
 class treebuild:
 
-	def __init__(self,linkagemethod,treecutpoint,tree_splitting_mode,min_proportion_shared_hmm,non_redundant_trees,global_min_hmm_prevalence,max_marker_overlap_range_for_tree,smallesttreesize,taxmap,force,batch,distances,query_markermatrix,ref_markermatrix,treetype,max_nodes_per_query,min_marker_overlap_with_query,min_marker_overlap_for_tree,genbankannos,genbankorfs,queryorfs,queryannos,tree_algorithm,tmpdir,outdir,threads,bootstrapnum):
+	def __init__(self,linkagemethod,treecutpoint,taxonomiclevel,tree_splitting_mode,min_proportion_shared_hmm,non_redundant_trees,global_min_hmm_prevalence,max_marker_overlap_range_for_tree,smallesttreesize,taxmap,force,batch,distances,query_markermatrix,ref_markermatrix,treetype,max_nodes_per_query,min_marker_overlap_with_query,min_marker_overlap_for_tree,genbankannos,genbankorfs,queryorfs,queryannos,tree_algorithm,tmpdir,outdir,threads,bootstrapnum):
 		self.treetype = treetype
 		self.smallesttreesize = smallesttreesize
 		self.taxmap = taxmap
+		self.taxonomiclevel = taxonomiclevel
 		self.max_marker_overlap_range_for_tree = max_marker_overlap_range_for_tree
 		self.global_min_hmm_prevalence = global_min_hmm_prevalence
 		self.distances = distances
