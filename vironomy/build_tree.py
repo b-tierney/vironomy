@@ -285,6 +285,7 @@ class treebuild:
 		refdb_sub.index=foo
 		self.query_markermatrix
 		foo = [x + '_query' for x in list(self.query_markermatrix.index)]
+		queries=foo
 		self.query_markermatrix.index = foo
 		merged = pd.concat([refdb_sub,self.query_markermatrix])
 		merged = merged[merged.columns[merged.sum()>=self.global_min_hmm_prevalence]]
@@ -293,7 +294,7 @@ class treebuild:
 		merged = merged[merged.sum(axis=1) > 0]
 		finalshape = merged.shape[0]
 		finalqueries = list(merged.index)
-		dropped = list(set(initialqueries) - set(finalqueries))
+		dropped = list(set(queries) - set(finalqueries))
 		print('	Dropping %s queries because they contained only HMMs below the global prevalence threshold (set with -x).'%(initialshape - finalshape))
 		with open('%s/failed_queries_global_hmm_threshold.txt'%self.outdir,'w') as w:
 			for line in dropped:
