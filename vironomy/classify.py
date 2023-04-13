@@ -67,7 +67,7 @@ class queryset:
 		self.markermatrix.columns = ['geneid','domain','evalue','contigid']
 		self.markermatrix = self.markermatrix.loc[:,['contigid','domain']]
 		intialsize=self.markermatrix.shape[0]
-		if not multicopy:
+		if not self.multicopy:
 			dups = list(self.markermatrix[self.markermatrix.duplicated()].index)
 			self.markermatrix = self.markermatrix.drop_duplicates()
 			if len(dups)>0:
