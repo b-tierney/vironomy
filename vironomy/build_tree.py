@@ -68,6 +68,7 @@ class treebuild:
 		#print(self.refdb)
 		#print(self.query_markermatrix)
 		print('	Finding potential nodes to include')
+		self.refdb = self.refdb.loc[:,self.querymarkermatrix.columns]
 		self.distances_individual = pd.DataFrame(pairwise_distances(self.query_markermatrix,self.refdb,n_jobs = self.threads))
 		self.distances_individual.columns = self.refdb.index
 		self.distances_individual.index = self.query_markermatrix.index
