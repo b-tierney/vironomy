@@ -17,7 +17,7 @@ def import_reference_dbs(markermatrixref,taxmapping):
 	markers = pd.read_csv(markermatrixref,index_col=0)
 	markers = markers.set_index('group',drop=True)
 	print('Successfully loaded reference matrix')
-	taxmap = pd.read_csv(taxmapping,sep='\t',index_col=0)
+	taxmap = pd.read_csv(taxmapping,sep='\t')#,index_col=0)
 	#print('Successfully loaded complete reference matrix')
 	#fullref = pd.read_csv(markermatrixfull,sep='\t')
 	return([markers,taxmap])
