@@ -288,6 +288,7 @@ class treebuild:
 		queries=foo
 		self.query_markermatrix.index = foo
 		merged = pd.concat([refdb_sub,self.query_markermatrix])
+		merged.to_csv('TESTMERGED.csv')
 		merged = merged[merged.columns[merged.sum()>=self.global_min_hmm_prevalence]]
 		initialshape = merged.shape[0]
 		initialqueries = list(merged.index)
