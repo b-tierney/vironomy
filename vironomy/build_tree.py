@@ -477,12 +477,11 @@ class treebuild:
 			genbankorfs_loaded = SeqIO.to_dict(SeqIO.parse(str(self.genbankorfs), "fasta"))
 			genbankannos = pd.read_csv(str(self.genbankannos),header=None,index_col=0,sep='\t')
 			genbankannos['contigid'] = (genbankannos).index.str.rsplit('.', n=1).str[0] + '_reference'
-			genbankannos = genbankannos[genbankannos['contigid'].isin(self.referencecontigsall)]
+			genbankannos = genbankannos[genbankannos['contigid'].isin([x + '_reference' for x in self.referencecontigsall])]
 			genbankannos = genbankannos.drop_duplicates(['contigid',1])
 			hmmvals = [x.replace("'","_") for x in genbankannos.iloc[:,0]]
 			genbankannos.iloc[:,0] = hmmvals
 			genbankannos = genbankannos[genbankannos.iloc[:,0].isin(allhmms)]
-			print(genbankannos)
 		# load in and subset the query orfs 
 		queryorfs_loaded = SeqIO.to_dict(SeqIO.parse(str(self.queryorfs), "fasta"))
 		queryannos = pd.read_csv(str(self.queryannos),header=None,index_col=0,sep='\t')
@@ -517,7 +516,6 @@ class treebuild:
 					temp.append('.'.join(seqidq.split('.')[:-1])+ '_query')
 				if self.treetype == 'placement':
 					for r in refgenes:
-						print(r)
 						seqidr = '>' + r
 						seqr = genbankorfs_loaded[r].seq
 						w.write('.'.join(seqidr.split('.')[:-1])+ '_reference' + '\n')
