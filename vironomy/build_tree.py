@@ -475,6 +475,7 @@ class treebuild:
 			hmmvals = [x.replace("'","_") for x in genbankannos.iloc[:,0]]
 			genbankannos.iloc[:,0] = hmmvals
 			genbankannos = genbankannos[genbankannos.iloc[:,0].isin(allhmms)]
+			print(genbankannos)
 		# load in and subset the query orfs 
 		queryorfs_loaded = SeqIO.to_dict(SeqIO.parse(str(self.queryorfs), "fasta"))
 		queryannos = pd.read_csv(str(self.queryannos),header=None,index_col=0,sep='\t')
@@ -499,6 +500,7 @@ class treebuild:
 			querygenes = list(set(list(queryannos[queryannos.iloc[:,0] == hmm].index)))
 			if self.treetype == 'placement':
 				refgenes = list(set(list(genbankannos[genbankannos.iloc[:,0] == hmm].index)))
+				print(refgenes)
 			with open(outdirhmm,'w') as w:
 				for q in querygenes:
 					seqidq = '>' + q
@@ -508,6 +510,7 @@ class treebuild:
 					temp.append('.'.join(seqidq.split('.')[:-1])+ '_query')
 				if self.treetype == 'placement':
 					for r in refgenes:
+						print(r)
 						seqidr = '>' + r
 						seqr = genbankorfs_loaded[r].seq
 						w.write('.'.join(seqidr.split('.')[:-1])+ '_reference' + '\n')
