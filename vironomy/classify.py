@@ -87,6 +87,8 @@ class queryset:
 	def primary_classification(self):
 		#get distances
 		print('	Computing distances between queries and reference clusters...')
+		self.markermatrix.to_csv('markermatrix.csv')
+		self.referencedbs.to_csv('refs.csv')
 		distances = pd.DataFrame(pairwise_distances(self.markermatrix, self.referencedbs, n_jobs = self.threads))
 		distances.columns=self.referencedbs.index
 		distances.to_csv('TEMPVAL.csv')
