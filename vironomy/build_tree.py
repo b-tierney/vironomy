@@ -458,8 +458,12 @@ class treebuild:
 			self.metadata_sharedhmms[t[0]] = t[1]
 			self.alignmentcontigs[t[0]] = t[3]
 			self.hmms_to_align[t[0]] = t[2]
-		filehandler = open('outpickle.pkl', 'w') 
-		pickle.dump(t, filehandler)
+		with open('metadatasharedhmms.pickle', 'wb') as handle:
+		    pickle.dump(self.metadata_sharedhmms, handle, protocol=pickle.HIGHEST_PROTOCOL)
+		with open('alignmentcontigs.pickle', 'wb') as handle:
+		    pickle.dump(self.alignmentcontigs, handle, protocol=pickle.HIGHEST_PROTOCOL)
+		with open('hmms_to_align.pickle', 'wb') as handle:
+		    pickle.dump(self.hmms_to_align, handle, protocol=pickle.HIGHEST_PROTOCOL)
 		return(self.metadata_sharedhmms)
 
 	def prep_for_alignment(self):
