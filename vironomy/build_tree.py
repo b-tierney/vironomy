@@ -279,6 +279,7 @@ class treebuild:
 		tokeep = [item for sublist in tokeep for item in sublist]
 		tokeep = list(set(tokeep))
 		refdb_sub  = self.refdb.loc[tokeep,:]
+		refdb_sub.to_csv('refcontigsallTEMP.csv')
 		self.referencecontigsall = tokeep
 		refdb_sub[refdb_sub == -1] = 0
 		foo = [x + '_reference' for x in list(refdb_sub.index)]
