@@ -89,6 +89,7 @@ class queryset:
 		print('	Computing distances between queries and reference clusters...')
 		distances = pd.DataFrame(pairwise_distances(self.markermatrix, self.referencedbs, n_jobs = self.threads))
 		distances.columns=self.referencedbs.index
+		distances.to_csv('TEMPVAL.csv')
 		# get index of all matches 
 		minvals = list(distances.min(axis=1))
 		self.taxadb={}
