@@ -601,6 +601,7 @@ class treebuild:
 				for c in contigs:
 					alignment = ''
 					hmms_contig = self.hmms_to_align[t]
+					print(hmms_contig)
 					for val in hmms_contig:
 						val = val.replace("'","_")
 						m = msas[val]
