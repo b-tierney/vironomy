@@ -581,18 +581,14 @@ class treebuild:
 			files = os.listdir('%s/alignments'%(self.tmpdir))
 			files = [self.tmpdir + '/alignments/' + x for x in files if '.aligned.trimmed' in x]
 		msas = {}
+		print(files)
 		for f in files:
 			hmm = f.split('/')[-1].replace('.fa.aligned.trimmed','')
 			hmm = hmm.replace("'","_")
 			msa = SeqIO.to_dict(SeqIO.parse(str(f), "fasta"))
 			msalen = len(msa[list(msa.keys())[0]])
 			msas[hmm] = [msa,msalen]
-		with open('alignmentcontigs.pickle', 'wb') as handle:
-    			pickle.dump(self.alignmentcontigs, handle, protocol=pickle.HIGHEST_PROTOCOL)
-		with open('hmmstoalign.pickle', 'wb') as handle:
-    			pickle.dump(self.hmms_to_align, handle, protocol=pickle.HIGHEST_PROTOCOL)
-		with open('msas.pickle', 'wb') as handle:
-    			pickle.dump(msas, handle, protocol=pickle.HIGHEST_PROTOCOL)
+		print(msas[hmm])
 		for t in self.alignmentcontigs.keys(): 
 			aligndir = self.tmpdir + '/' + t
 			os.system('mkdir -p %s'%aligndir)
