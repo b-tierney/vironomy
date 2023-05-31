@@ -182,15 +182,21 @@ class treebuild:
 				out = out[out.loc[:,'count']>self.smallesttreesize]
 				finaltrees = out.groupby('cluster').agg(pd.Series.tolist).contigid.tolist()
 			else:
+				print(1)
 				overlaps = merged.dot(merged.T)
+				print(2)
 				querydist = overlaps.loc[queries,:]
+				print(3)
 				querydist_rawnum = overlaps.loc[queries,:]
+				print(4)
 				querydist[querydist<=self.min_marker_overlap_for_tree]=0
 				querydist[querydist!=0]=1
 				#treelist = []
+				print(5)
 				pool = Pool(self.threads)                         
 				treelist = pool.map(self.generate_treelist, [[x,querydist,querydist_rawnum] for x in querydist.index]) 
 				pool.close()
+				print(6)
 				#for x in querydist.index:
 				#	treelist.append(self.generate_treelist([x,querydist,querydist_rawnum]))
 				treelist.sort()
