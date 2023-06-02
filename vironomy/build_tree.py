@@ -443,12 +443,13 @@ class treebuild:
 		self.metadata_sharedhmms = {}
 		self.hmms_to_align = {}
 		self.alignmentcontigs = {}
-		#treeout = []
-		#for x in range(0,len(self.finaltrees)):
-	#		treeout.append(self.parallel_hmm_hunting(x))
-		pool = Pool(self.threads)  
-		treeout = pool.map(self.parallel_hmm_hunting, range(0,len(self.finaltrees))) 
-		pool.close()
+		treeout = []
+		for x in range(0,len(self.finaltrees)):
+			print(x)
+			treeout.append(self.parallel_hmm_hunting(x))
+		#pool = Pool(self.threads)  
+		#treeout = pool.map(self.parallel_hmm_hunting, range(0,len(self.finaltrees))) 
+		#pool.close()
 		short = [x[3] for x in treeout if len(x[3])<self.smallesttreesize]
 		if len(short) == len(treeout):
 			print('	None of your trees have enough genomes! Try reducing the required number of overlapping HMMs.')
