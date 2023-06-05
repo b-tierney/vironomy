@@ -414,6 +414,7 @@ class treebuild:
 		hmms_for_alignment=[]
 		contigcoverage.extend(list(set(list(mergedsub.index))))
 		while True:
+			print(mergedsub)
 			i=mergedsub.columns[0]
 			col = mergedsub.loc[:,i]
 			mergedsub = mergedsub.drop(i,axis=1)
