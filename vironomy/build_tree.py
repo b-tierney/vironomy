@@ -415,7 +415,10 @@ class treebuild:
 		contigcoverage.extend(list(set(list(mergedsub.index))))
 		while True:
 			print(mergedsub)
-			i=mergedsub.columns[0]
+			try:
+				i=mergedsub.columns[0]
+			except:
+				break
 			col = mergedsub.loc[:,i]
 			mergedsub = mergedsub.drop(i,axis=1)
 			col = col[col>0].index
