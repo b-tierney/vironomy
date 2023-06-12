@@ -144,7 +144,7 @@ class queryset:
 			tophits = pd.merge(tophits,self.taxmap,on='genbank_contigid',how='left').drop('number_of_occurences_of_taxonomic_annotation_per_group',axis=1)
 			tophits['found_by'] = 'Secondary clustering'
 			if (tosubcluster/count) % 10 == 0:
-				print('	Subclustering is %s%% complete.'%str(round(1000*(count/tosubcluster)),2))
+				print('	Subclustering is %s%% complete.'%str(round(100*(count/tosubcluster),2)))
 			# merge all output 
 			self.taxadb_secondary[m] = tophits
 		return(full_database) 
