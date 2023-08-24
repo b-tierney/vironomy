@@ -12,19 +12,6 @@ from vironomy.classify import queryset
 import click
 import pickle
 
-### next dev tasks
-
-# write unit tests
-# test on space genomes
-
-# adapt function for big trees -- incorporate a "split" distance that separates trees out
-
-# run on the entirety of imgvr
-
-# other examples
-# what happens if you put double and single stranded viruses together
-# what happens if you put RNA and DNA viruses together
-
 @click.group()
 def cli():
 	pass
@@ -88,13 +75,9 @@ def classify(inputs,dbdir,hmmdb,multicopy,outputdir,taxonomiclevel,hitstoreport,
 @click.option('-d','--dbdir', required = True,default=1, help='Path to directory containing databases.',type = str)
 @click.option('-o','--outputdir',required = False, default='vironomy_output', help='Path to phylogeny output directory [Default = vironomy_output]',type = str)
 @click.option('-r','--tree_algorithm', default = 'iqtree', required=False, help='Tree building algorithm (iqtree, raxml, or fasttree) [Default = iqtree]',type = str)
-@click.option('-a','--runmode', default = 'placement', required=False, help='placement [Default] or de_novo. Indicates if you want your queries placed in larger tree of references, or if you want them set alone on their own tree.',type = str)
-@click.option('-m','--max_nodes_per_query', required = False,default=25, help='Maximum number of reference nodes to be potentially assigned to each query (max possible tree size is this value times the number of queries) [Default = 25].',type = int)
-@click.option('-q','--min_marker_overlap_with_query', required = False,default=1, help='Minimum number of overlapping HMMs between a query its identified references [Default = 1].',type = int)
 @click.option('-k','--min_marker_overlap_for_tree', required = False,default=1, help='Minimum number of overlapping HMMs that must be shared between viral genomes for them to be placed on the same tree. [Default = 1]',type = int)
 @click.option('-p','--threads', required = False, default=1, help='Number of CPU threads to use [Default = 1].')
 @click.option('-t','--tmpdir', required = False, default='tmp', help='Name of classification temporary directory [Default = tmp].')
-@click.option('-g','--classification_filter', required = False, default = 'None',help='None/Phylum/Class/Order/Family/Genus/Species. Only include contigs with taxonomic classifications for at least this clade. [Default = None]')
 @click.option('-u','--smallesttreesize', required = False, default = 3,help='Min number of genomes that can be on a tree. [Default = 3]')
 @click.option('-y','--max_marker_overlap_range_for_tree', required = False, default = 10,help='Max allowable range in overlapping HMMs between any set of genomes in a tree. [Default = 10]')
 @click.option('-w','--min_proportion_shared_hmm', required = False, default = 0.5,help='Proportion of genomes in a tree that must overlap by -k. In other words, if this is set to 1, all genomes in a tree with share at least -k HMMs. If set to the default, 0.5, any genome will share -k HMMs with 50% of other genomes on a tree [Default = 0.5]')
@@ -103,32 +86,15 @@ def classify(inputs,dbdir,hmmdb,multicopy,outputdir,taxonomiclevel,hitstoreport,
 @click.option('-b','--batch', is_flag = True, help='Do not generate treefiles -- instead create a config file that can be run on a slurm submission system.')
 @click.option('-n','--non_redundant_trees', is_flag = True, help='Prevent viruses from appearing on multiple trees (relevant if k > 0).')
 @click.option('-z','--tree_splitting_mode', required = False, default = 'hierarchical', help='Hierarchical, linkage based clustering to generate trees or use an iterative HMM overlap-based approach (the latter will have better coverage of your queries but have more distantly related genomes on the same tree, potentially). [Default = hierarchical].')
-@click.option('-l','--taxonomiclevel',required = False, default='Genus', help='Target taxonomic classification level: Phylum, Class, Order, Family, Genus, Species [Default = Genus]',type = str)
 @click.option('--treecutpoint', required = False, default = .25, help='Cutpoint on linkage dendrogram for hierarchical clustering. Will drastically impact number of trees. [Default = .25].')
 @click.option('--linkagemethod', required = False, default = 'complete', help='Linkage method for hierarchical tree splitting. Complete, average, or single recommended. [Default = complete].')
 #@click.option('-v','--verbose', is_flag=True, Show lots of tree building output?')
-def phylogeny(linkagemethod,treecutpoint,taxonomiclevel,tree_splitting_mode,min_proportion_shared_hmm,global_min_hmm_prevalence,non_redundant_trees,classifyout,max_marker_overlap_range_for_tree,smallesttreesize,classification_filter,batch,force,runmode,dbdir,max_nodes_per_query,min_marker_overlap_with_query,min_marker_overlap_for_tree,tree_algorithm,tmpdir,threads,outputdir,distances = None, markermatrix = None):
-	if distances is None:
-		distances = pd.read_pickle(classifyout + '/pairwise_distances.pickle')
+def phylogeny(linkagemethod,treecutpoint,taxonomiclevel,tree_splitting_mode,min_proportion_shared_hmm,global_min_hmm_prevalence,non_redundant_trees,classifyout,max_marker_overlap_range_for_tree,smallesttreesize,batch,force,dbdir,min_marker_overlap_for_tree,tree_algorithm,tmpdir,threads,outputdir,distances = None, markermatrix = None):
 	if markermatrix is None:
 		markermatrix = pd.read_pickle(classifyout + '/query_markers.pickle')
-	fulldb = dbdir + '/full_sc_marker_db.csv'
-	taxmap = dbdir + '/'+taxonomiclevel+'_group_taxid_contigid_mapping_annotation_data.tsv'
-	genbankannos = dbdir + '/genbank_pfam_tgirfam_all_annotations_sc.txt'
-	genbankorfs = dbdir +  '/genbank_predicted_proteins.faa'
 	queryannos = classifyout +  '/query.pfam.tigrfam.annotations.cleaned'
 	queryorfs = classifyout +  '/query_orfs.faa'
-	simplifiedtaxa = classifyout +  '/simplified_taxonomy_report.csv'
-	classval = pd.read_csv(simplifiedtaxa,index_col=0)
-	if classification_filter=='None':
-		filteredmarkers = classval
-	else:
-		filteredmarkers = classval[classval[classification_filter]!= 'Multiple hits']
-	filteredmarkers = list(filteredmarkers['query'])
-	distances = distances.loc[filteredmarkers,:]
-	markermatrix = markermatrix.loc[filteredmarkers,:]
-	taxmap = pd.read_csv(taxmap,index_col=0,sep='\t')
-	treebuilder = treebuild(linkagemethod=linkagemethod,taxonomiclevel=taxonomiclevel,treecutpoint=treecutpoint,tree_splitting_mode=tree_splitting_mode,min_proportion_shared_hmm=min_proportion_shared_hmm,global_min_hmm_prevalence=global_min_hmm_prevalence,non_redundant_trees = non_redundant_trees,smallesttreesize = smallesttreesize,max_marker_overlap_range_for_tree = max_marker_overlap_range_for_tree,force=force,batch=batch, distances = distances,taxmap = taxmap, query_markermatrix = markermatrix,ref_markermatrix = fulldb,treetype = runmode,max_nodes_per_query = max_nodes_per_query,min_marker_overlap_with_query = min_marker_overlap_with_query, min_marker_overlap_for_tree = min_marker_overlap_for_tree,genbankannos = genbankannos,genbankorfs = genbankorfs,queryannos = queryannos,queryorfs = queryorfs,tree_algorithm = tree_algorithm,tmpdir = tmpdir,outdir = outputdir,threads = threads,bootstrapnum = 1000)
+	treebuilder = treebuild(linkagemethod=linkagemethod,treecutpoint=treecutpoint,tree_splitting_mode=tree_splitting_mode,min_proportion_shared_hmm=min_proportion_shared_hmm,global_min_hmm_prevalence=global_min_hmm_prevalence,non_redundant_trees = non_redundant_trees,smallesttreesize = smallesttreesize,max_marker_overlap_range_for_tree = max_marker_overlap_range_for_tree,force=force,batch=batch, query_markermatrix = markermatrix, min_marker_overlap_for_tree = min_marker_overlap_for_tree,queryannos = queryannos,queryorfs = queryorfs,tree_algorithm = tree_algorithm,tmpdir = tmpdir,outdir = outputdir,threads = threads,bootstrapnum = 1000)
 	if not force:
 		alignments = []
 		for root, dirs, files in os.walk(tmpdir):
@@ -139,20 +105,15 @@ def phylogeny(linkagemethod,treecutpoint,taxonomiclevel,tree_splitting_mode,min_
 			trees = [x.split('/')[-2] for x in alignments]
 			treebuilder.build_tree(trees)
 			return()
-	if runmode == 'de_novo':
-		print('	Running de novo tree construction.')
-		treebuilder.initialize_denovo_tree()
-		fullmarkermatrix = treebuilder.split_denovo_tree()
-	if runmode == 'placement':
-		print('	Placing genomes with genbank references.')
-		treebuilder.find_potential_nodes()
-		fullmarkermatrix = treebuilder.winnow_nodes_and_split_trees()
+	print('	Running tree identification.')
+	treebuilder.initialize_denovo_tree()
+	fullmarkermatrix = treebuilder.split_denovo_tree()
 	metadata_hmmcontent = treebuilder.find_tree_specific_hmms()
 	trees,tree_contig_mapping = treebuilder.prep_for_alignment()
 	# pickle the tree contig mapping dict for later
-	with open(outputdir + '/tree_contig_mappingdict.pickle', 'wb') as handle:
+	with open(outputdir + '/tree_contig_mappingdict.pickle', 'wb') as handle: ### COVERT THIS TO AN OUTPUT THAT IS READABLE
 	    pickle.dump(tree_contig_mapping, handle, protocol=pickle.HIGHEST_PROTOCOL)
-	fullmarkermatrix.to_pickle(outputdir + '/fullmarkermatrix.pickle')
+	#fullmarkermatrix.to_pickle(outputdir + '/fullmarkermatrix.pickle')
 	treebuilder.generate_msas()
 	treebuilder.combine_msas()
 	treebuilder.build_tree(trees)
