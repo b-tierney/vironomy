@@ -106,7 +106,6 @@ def phylogeny(linkagemethod,treecutpoint,taxonomiclevel,tree_splitting_mode,min_
 			treebuilder.build_tree(trees)
 			return()
 	print('	Running tree identification.')
-	treebuilder.initialize_denovo_tree()
 	fullmarkermatrix = treebuilder.split_denovo_tree()
 	metadata_hmmcontent = treebuilder.find_tree_specific_hmms()
 	trees,tree_contig_mapping = treebuilder.prep_for_alignment()
