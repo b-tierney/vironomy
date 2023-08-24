@@ -46,7 +46,7 @@ def classify(inputs,dbdir,hmmdb,multicopy,outputdir,evaluecutoff,threads,tmpdir,
 		multicopystatus = False
 	predictedgenesout = outputdir + '/query_orfs.faa' 
 	markerout = outputdir + '/query.pfam.tigrfam.annotations.cleaned' 	
-	data = queryset(hmmdb=hmmdb,fastafile = inputs,multicopy = multicopystatus,hitstoreport = hitstoreport,hmmpath = hmmpath,threads = threads,evaluecutoff = evaluecutoff,tmpdir = tmpdir,outputdir = outputdir)
+	data = queryset(hmmdb=hmmdb,fastafile = inputs,multicopy = multicopystatus,hmmpath = hmmpath,threads = threads,evaluecutoff = evaluecutoff,tmpdir = tmpdir,outputdir = outputdir)
 	if os.path.exists(predictedgenesout) and not force:
 		print('	ORF calling output exists, using these data. To regenerate, rename your output directory or run with the "--force" flag.')
 	if os.path.exists(predictedgenesout) == False or force:
