@@ -11,14 +11,9 @@ from sklearn.metrics.pairwise import pairwise_distances
 
 class queryset:
 
-	def __init__(self,fastafile,multicopy,markermatrixref,fulldb,hitstoreport,hmmdb,hmmpath,tmpdir,threads,evaluecutoff,outputdir,taxonomiclevel):
+	def __init__(self,fastafile,multicopy,markermatrixref,hmmdb,hmmpath,tmpdir,threads,evaluecutoff,outputdir,taxonomiclevel):
 		self.sequences = fastafile
 		self.multicopy = multicopy
-		self.subcluster = subcluster
-		self.fulldb = fulldb
-		self.taxonomiclevel = taxonomiclevel
-		self.hitstoreport = hitstoreport
-		#self.referencedbs, self.taxmap = import_reference_dbs(markermatrixref,taxmapping)
 		self.hmmpath = hmmpath
 		self.threads = threads
 		self.tmpdir = tmpdir

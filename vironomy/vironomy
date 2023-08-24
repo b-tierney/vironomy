@@ -23,7 +23,7 @@ def cli():
 @cli.command('classify')
 @click.option('-i','--inputs', required=True, help='File containing your query genomes.',type = str)
 @click.option('-d','--dbdir', required = True, help='Path to directory containing databases.',type = str)
-@click.option('--hmmdb', required = False,default = 'Default', help='Selected HMM db. Default, NeoRdRp, or XXX. [Default = Default].',type = str)
+@click.option('--hmmdb', required = False,default = 'Default', help='Selected HMM db. Default, NeoRdRp, or your own. [Default = Default].',type = str)
 @click.option('--multicopy', required = False,is_flag = True, help='Work with HMM that are multi-copy in a single genome, instead of only single copy ones, per your e-value cutoff.')
 @click.option('-o','--outputdir',required = False, default='vironomy_output', help='Path to classification output directory [Default = vironomy_output]',type = str)
 @click.option('-e','--evaluecutoff', required = False, default=0.01, help='E-value cutoff for hmmsearch [Default = 0.01].',type = float)
@@ -46,7 +46,7 @@ def classify(inputs,dbdir,hmmdb,multicopy,outputdir,evaluecutoff,threads,tmpdir,
 		multicopystatus = False
 	predictedgenesout = outputdir + '/query_orfs.faa' 
 	markerout = outputdir + '/query.pfam.tigrfam.annotations.cleaned' 	
-	data = queryset(hmmdb=hmmdb,fastafile = inputs,multicopy = multicopystatus,hitstoreport = hitstoreport,hmmpath = hmmpath,threads = threads,evaluecutoff = evaluecutoff,tmpdir = tmpdir,outputdir = outputdir)
+	data = queryset(hmmdb=hmmdb,fastafile = inputs,multicopy = multicopystatus,hmmpath = hmmpath,threads = threads,evaluecutoff = evaluecutoff,tmpdir = tmpdir,outputdir = outputdir)
 	if os.path.exists(predictedgenesout) and not force:
 		print('	ORF calling output exists, using these data. To regenerate, rename your output directory or run with the "--force" flag.')
 	if os.path.exists(predictedgenesout) == False or force:
