@@ -46,7 +46,7 @@ def classify(inputs,dbdir,hmmdb,multicopy,outputdir,evaluecutoff,threads,tmpdir,
 		multicopystatus = False
 	predictedgenesout = outputdir + '/query_orfs.faa' 
 	markerout = outputdir + '/query.pfam.tigrfam.annotations.cleaned' 	
-	data = queryset(hmmdb=hmmdb,fastafile = inputs,taxonomiclevel=taxonomiclevel,multicopy = multicopystatus,hitstoreport = hitstoreport,subcluster = subcluster,fulldb = fulldb,markermatrixref = markermatrixref,taxmapping = taxmap,hmmpath = hmmpath,threads = threads,evaluecutoff = evaluecutoff,tmpdir = tmpdir,outputdir = outputdir)
+	data = queryset(hmmdb=hmmdb,fastafile = inputs,multicopy = multicopystatus,hitstoreport = hitstoreport,hmmpath = hmmpath,threads = threads,evaluecutoff = evaluecutoff,tmpdir = tmpdir,outputdir = outputdir)
 	if os.path.exists(predictedgenesout) and not force:
 		print('	ORF calling output exists, using these data. To regenerate, rename your output directory or run with the "--force" flag.')
 	if os.path.exists(predictedgenesout) == False or force:
@@ -57,11 +57,8 @@ def classify(inputs,dbdir,hmmdb,multicopy,outputdir,evaluecutoff,threads,tmpdir,
 		data.identify_markers()
 	markermatrix = data.parse_markers()
 	distances = data.primary_classification()
-	if subcluster == True:
-		data.secondary_classification()
-	data.parse_taxonomy()
 	print('	Writing distance matrix and query hmm presence/absence matrix to file.')
-	distances.to_pickle(outputdir + '/pairwise_distances.pickle')
+	#distances.to_pickle(outputdir + '/pairwise_distances.pickle')
 	markermatrix.to_pickle(outputdir + '/query_markers.pickle')
 	print('<<<<<< Output files are stored in %s >>>>>>>'%(outputdir))
 
