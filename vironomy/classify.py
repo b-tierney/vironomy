@@ -11,14 +11,14 @@ from sklearn.metrics.pairwise import pairwise_distances
 
 class queryset:
 
-	def __init__(self,fastafile,multicopy,markermatrixref,taxmapping,subcluster,fulldb,hitstoreport,hmmdb,hmmpath,tmpdir,threads,evaluecutoff,outputdir,taxonomiclevel):
+	def __init__(self,fastafile,multicopy,markermatrixref,fulldb,hitstoreport,hmmdb,hmmpath,tmpdir,threads,evaluecutoff,outputdir,taxonomiclevel):
 		self.sequences = fastafile
 		self.multicopy = multicopy
 		self.subcluster = subcluster
 		self.fulldb = fulldb
 		self.taxonomiclevel = taxonomiclevel
 		self.hitstoreport = hitstoreport
-		self.referencedbs, self.taxmap = import_reference_dbs(markermatrixref,taxmapping)
+		#self.referencedbs, self.taxmap = import_reference_dbs(markermatrixref,taxmapping)
 		self.hmmpath = hmmpath
 		self.threads = threads
 		self.tmpdir = tmpdir
@@ -26,18 +26,6 @@ class queryset:
 		self.evaluecutoff = evaluecutoff
 		os.system('mkdir -p %s'%tmpdir)
 		os.system('mkdir -p %s'%outputdir)
-		if self.taxonomiclevel == 'Phylum':
-			self.taxnum = 0
-		if self.taxonomiclevel == 'Class':
-			self.taxnum = 1
-		if self.taxonomiclevel == 'Order':
-			self.taxnum = 2
-		if self.taxonomiclevel == 'Family':
-			self.taxnum = 3
-		if self.taxonomiclevel == 'Genus':
-			self.taxnum = 4
-		if self.taxonomiclevel == 'Species':
-			self.taxnum = 5
 		print('<<<<<< STARTING CLASSIFICATION >>>>>>>')
 
 	def call_orfs(self):
@@ -79,9 +67,9 @@ class queryset:
 			print('Either failed to find any markers or we dropped them all! Try changing your evalue cutoff or ensuring you have high quality contigs.')
 			quit()
 		print('	After parsing, %s single copy markers have been identified across all contigs.'%(self.markermatrix.shape[1]))
-		blanks = pd.DataFrame(0,index=self.markermatrix.index,columns = list(set(list((self.referencedbs).columns)) - set(self.markermatrix.columns)))
+		#blanks = pd.DataFrame(0,index=self.markermatrix.index,columns = list(set(list((self.referencedbs).columns)) - set(self.markermatrix.columns)))
 		self.markermatrix = self.markermatrix.join(blanks)
-		self.markermatrix  = self.markermatrix[(self.referencedbs).columns]
+		#self.markermatrix  = self.markermatrix[(self.referencedbs).columns]
 		return(self.markermatrix)
 
 	def primary_classification(self):
