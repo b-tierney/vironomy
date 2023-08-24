@@ -31,9 +31,9 @@ def cli():
 @click.option('-t','--tmpdir', required = False, default='tmp', help='Name of classification temporary directory [Default = tmp].',type = str)
 @click.option('-f','--force', is_flag = True, help='Remake any existing ORF calling, HMM, or alignment files.')
 def classify(inputs,dbdir,hmmdb,multicopy,outputdir,evaluecutoff,threads,tmpdir,force):
-	fulldb = dbdir + '/full_sc_marker_db.csv'
-	markermatrixref = dbdir+ '/'+taxonomiclevel+'_single_copy_marker_database.csv'
-	taxmap = dbdir + '/'+taxonomiclevel+'_group_taxid_contigid_mapping_annotation_data.tsv'
+	#fulldb = dbdir + '/full_sc_marker_db.csv'
+	#markermatrixref = dbdir+ '/'+taxonomiclevel+'_single_copy_marker_database.csv'
+	#taxmap = dbdir + '/'+taxonomiclevel+'_group_taxid_contigid_mapping_annotation_data.tsv'
 	if hmmdb == 'Default':
 		hmmpath = dbdir + '/single_copy_marker_db.hmm'
 	if hmmdb == 'NeoRdRp':
