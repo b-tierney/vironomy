@@ -61,9 +61,9 @@ class queryset:
 		if self.markermatrix.shape[1] == 0:
 			print('Either failed to find any markers or we dropped them all! Try changing your evalue cutoff or ensuring you have high quality contigs.')
 			quit()
-		print('	After parsing, %s single copy markers have been identified across all contigs.'%(self.markermatrix.shape[1]))
+		print('	After parsing, %s markers have been identified across all contigs.'%(self.markermatrix.shape[1]))
 		#blanks = pd.DataFrame(0,index=self.markermatrix.index,columns = list(set(list((self.referencedbs).columns)) - set(self.markermatrix.columns)))
-		self.markermatrix = self.markermatrix.join(blanks)
+		#self.markermatrix = self.markermatrix.join(blanks)
 		#self.markermatrix  = self.markermatrix[(self.referencedbs).columns]
 		return(self.markermatrix)
 
