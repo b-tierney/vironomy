@@ -26,14 +26,11 @@ def cli():
 @click.option('--hmmdb', required = False,default = 'Default', help='Selected HMM db. Default, NeoRdRp, or XXX. [Default = Default].',type = str)
 @click.option('--multicopy', required = False,is_flag = True, help='Work with HMM that are multi-copy in a single genome, instead of only single copy ones, per your e-value cutoff.')
 @click.option('-o','--outputdir',required = False, default='vironomy_output', help='Path to classification output directory [Default = vironomy_output]',type = str)
-@click.option('-l','--taxonomiclevel',required = False, default='Genus', help='Target taxonomic classification level: Phylum, Class, Order, Family, Genus, Species [Default = Genus]',type = str)
-@click.option('-h','--hitstoreport', required = False, default=5, help='Number of taxonomic hits to report. [Default = 5]',type = int)
-@click.option('-s','--subcluster', required = False, default=True, help='True/False. Run secondary clustering for more accurate taxonomic classification [Default = True]')
 @click.option('-e','--evaluecutoff', required = False, default=0.01, help='E-value cutoff for hmmsearch [Default = 0.01].',type = float)
 @click.option('-p','--threads', required = False, default=1, help='Number of CPU threads to use [Default = 1].', type = int)
 @click.option('-t','--tmpdir', required = False, default='tmp', help='Name of classification temporary directory [Default = tmp].',type = str)
 @click.option('-f','--force', is_flag = True, help='Remake any existing ORF calling, HMM, or alignment files.')
-def classify(inputs,dbdir,hmmdb,multicopy,outputdir,taxonomiclevel,hitstoreport,subcluster,evaluecutoff,threads,tmpdir,force):
+def classify(inputs,dbdir,hmmdb,multicopy,outputdir,evaluecutoff,threads,tmpdir,force):
 	fulldb = dbdir + '/full_sc_marker_db.csv'
 	markermatrixref = dbdir+ '/'+taxonomiclevel+'_single_copy_marker_database.csv'
 	taxmap = dbdir + '/'+taxonomiclevel+'_group_taxid_contigid_mapping_annotation_data.tsv'
