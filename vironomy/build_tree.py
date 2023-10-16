@@ -20,12 +20,11 @@ import subprocess
 
 class treebuild:
 
-	def __init__(self,linkagemethod,treecutpoint,tree_splitting_mode,min_proportion_shared_hmm,non_redundant_trees,global_min_hmm_prevalence,max_marker_overlap_range_for_tree,smallesttreesize,force,batch,query_markermatrix,treetype,min_marker_overlap_for_tree,queryorfs,queryannos,tree_algorithm,tmpdir,outdir,threads,bootstrapnum):
-		self.treetype = treetype
+	def __init__(self,linkagemethod,treecutpoint,tree_splitting_mode,min_proportion_shared_hmm,non_redundant_trees,global_min_hmm_prevalence,max_marker_overlap_range_for_tree,smallesttreesize,force,batch,query_markermatrix,min_marker_overlap_for_tree,queryorfs,queryannos,tree_algorithm,tmpdir,outdir,threads,bootstrapnum):
 		self.smallesttreesize = smallesttreesize
 		self.max_marker_overlap_range_for_tree = max_marker_overlap_range_for_tree
 		self.global_min_hmm_prevalence = global_min_hmm_prevalence
-		self.max_nodes_per_query = max_nodes_per_query
+		#self.max_nodes_per_query = max_nodes_per_query
 		self.query_markermatrix = query_markermatrix
 		self.min_marker_overlap_for_tree = min_marker_overlap_for_tree
 		self.queryorfs = queryorfs 
@@ -300,16 +299,16 @@ class treebuild:
 		allhmms = [x.replace("'","_") for x in allhmms]
 		genbankorfs_sub={}
 		print('	Loading sequence data in preparation for alignment.')
-		if self.treetype == 'placement':
-			# load genbank reference data based on HMMs
-			genbankorfs_loaded = SeqIO.to_dict(SeqIO.parse(str(self.genbankorfs), "fasta"))
-			genbankannos = pd.read_csv(str(self.genbankannos),header=None,index_col=0,sep='\t')
-			genbankannos['contigid'] = (genbankannos).index.str.rsplit('.', n=1).str[0] + '_reference'
-			genbankannos = genbankannos[genbankannos['contigid'].isin([x + '_reference' for x in self.referencecontigsall])]
-			genbankannos = genbankannos.drop_duplicates(['contigid',1])
-			hmmvals = [x.replace("'","_") for x in genbankannos.iloc[:,0]]
-			genbankannos.iloc[:,0] = hmmvals
-			genbankannos = genbankannos[genbankannos.iloc[:,0].isin(allhmms)]
+#		if self.treetype == 'placement':
+#			# load genbank reference data based on HMMs
+#			genbankorfs_loaded = SeqIO.to_dict(SeqIO.parse(str(self.genbankorfs), "fasta"))
+#			genbankannos = pd.read_csv(str(self.genbankannos),header=None,index_col=0,sep='\t')
+#			genbankannos['contigid'] = (genbankannos).index.str.rsplit('.', n=1).str[0] + '_reference'
+#			genbankannos = genbankannos[genbankannos['contigid'].isin([x + '_reference' for x in self.referencecontigsall])]
+#			genbankannos = genbankannos.drop_duplicates(['contigid',1])
+#			hmmvals = [x.replace("'","_") for x in genbankannos.iloc[:,0]]
+#			genbankannos.iloc[:,0] = hmmvals
+#			genbankannos = genbankannos[genbankannos.iloc[:,0].isin(allhmms)]
 		# load in and subset the query orfs 
 		queryorfs_loaded = SeqIO.to_dict(SeqIO.parse(str(self.queryorfs), "fasta"))
 		queryannos = pd.read_csv(str(self.queryannos),header=None,index_col=0,sep='\t')
@@ -332,9 +331,9 @@ class treebuild:
 			self.alignpaths.append(outdirhmm)
 			# get the genes with the domain
 			querygenes = list(set(list(queryannos[queryannos.iloc[:,0] == hmm].index)))
-			if self.treetype == 'placement':
-				refgenes = list(set(list(genbankannos[genbankannos.iloc[:,0] == hmm].index)))
-				print(refgenes)
+	#		if self.treetype == 'placement':
+	#			refgenes = list(set(list(genbankannos[genbankannos.iloc[:,0] == hmm].index)))
+	#			print(refgenes)
 			with open(outdirhmm,'w') as w:
 				for q in querygenes:
 					seqidq = '>' + q
@@ -342,13 +341,13 @@ class treebuild:
 					w.write('.'.join(seqidq.split('.')[:-1]) + '_query' + '\n')
 					w.write(str(seqq) + '\n')
 					temp.append('.'.join(seqidq.split('.')[:-1])+ '_query')
-				if self.treetype == 'placement':
-					for r in refgenes:
-						seqidr = '>' + r
-						seqr = genbankorfs_loaded[r].seq
-						w.write('.'.join(seqidr.split('.')[:-1])+ '_reference' + '\n')
-						w.write(str(seqr) + '\n')
-						temp.append('.'.join(seqidr.split('.')[:-1])+ '_reference')
+		#		if self.treetype == 'placement':
+		#			for r in refgenes:
+		#				seqidr = '>' + r
+		#				seqr = genbankorfs_loaded[r].seq
+		#				w.write('.'.join(seqidr.split('.')[:-1])+ '_reference' + '\n')
+		#				w.write(str(seqr) + '\n')
+		#				temp.append('.'.join(seqidr.split('.')[:-1])+ '_reference')
 		print('	All genes have been written to file and we are ready to run alignments.')
 		return([trees,self.alignmentcontigs])
 
@@ -402,14 +401,12 @@ class treebuild:
 			files = os.listdir('%s/alignments'%(self.tmpdir))
 			files = [self.tmpdir + '/alignments/' + x for x in files if '.aligned.trimmed' in x]
 		msas = {}
-		print(files)
 		for f in files:
 			hmm = f.split('/')[-1].replace('.fa.aligned.trimmed','')
 			hmm = hmm.replace("'","_")
 			msa = SeqIO.to_dict(SeqIO.parse(str(f), "fasta"))
 			msalen = len(msa[list(msa.keys())[0]])
 			msas[hmm] = [msa,msalen]
-		print(msas[hmm])
 		for t in self.alignmentcontigs.keys(): 
 			aligndir = self.tmpdir + '/' + t
 			os.system('mkdir -p %s'%aligndir)
@@ -418,7 +415,6 @@ class treebuild:
 				for c in contigs:
 					alignment = ''
 					hmms_contig = self.hmms_to_align[t]
-					print(hmms_contig)
 					for val in hmms_contig:
 						val = val.replace("'","_")
 						m = msas[val]
@@ -445,14 +441,15 @@ class treebuild:
 				treeslurm.append([t,self.tree_algorithm,fullalignment,treepath])
 			if not self.batch:
 				print('		%s'%t)
-				treepath = self.outdir + '/' + t + '/' + t
+				treepath = self.outdir + '/' + t 
 				os.system('mkdir -p %s'%(self.outdir + '/' + t + '/'))
 				if self.tree_algorithm == 'iqtree':
 					os.system("iqtree -s %s --prefix %s -m MFP --seqtype AA -T %s 2>> %s/treelog"%(fullalignment,treepath,self.threads,self.tmpdir))
 					treefiles.append([treepath + '.iqtree','iqtree'])
 				if self.tree_algorithm == 'fasttree':
 					os.system("export OMP_NUM_THREADS=%s"%self.threads)
-					os.system("fasttree %s > %s/fasttree.tree"%(fullalignment,treepath,self.tmpdir))
+					print(treepath)
+					os.system("fasttree %s > %s/fasttree.tree"%(fullalignment,treepath))
 					treefiles.append([treepath + 'fasttree.tree','fasttree'])
 				#if self.tree_algorithm == 'RAxML':
 				#	os.system("")
