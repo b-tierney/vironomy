@@ -20,7 +20,7 @@ flake8==5.0.4
 furo==2022.6.4.1
 idna==3.3
 imagesize==1.4.1
-importlib-metadata==4.12.0
+importlib-metadata
 iniconfig==1.1.1
 isort==5.10.1
 jeepney==0.8.0

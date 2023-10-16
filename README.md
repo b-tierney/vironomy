@@ -140,5 +140,3 @@ N/A
 * Twitter: https://twitter.com/BradenTierney
 * LinkedIn: https://www.linkedin.com/in/bradentierney/
 * Scholar: https://scholar.google.com/citations?user=6oSRYqMAAAAJ&hl=en&authuser=1&oi=ao
-
-

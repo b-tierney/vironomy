@@ -20,21 +20,13 @@ import subprocess
 
 class treebuild:
 
-	def __init__(self,linkagemethod,treecutpoint,taxonomiclevel,tree_splitting_mode,min_proportion_shared_hmm,non_redundant_trees,global_min_hmm_prevalence,max_marker_overlap_range_for_tree,smallesttreesize,taxmap,force,batch,distances,query_markermatrix,ref_markermatrix,treetype,max_nodes_per_query,min_marker_overlap_with_query,min_marker_overlap_for_tree,genbankannos,genbankorfs,queryorfs,queryannos,tree_algorithm,tmpdir,outdir,threads,bootstrapnum):
-		self.treetype = treetype
+	def __init__(self,linkagemethod,treecutpoint,tree_splitting_mode,min_proportion_shared_hmm,non_redundant_trees,global_min_hmm_prevalence,max_marker_overlap_range_for_tree,smallesttreesize,force,batch,query_markermatrix,min_marker_overlap_for_tree,queryorfs,queryannos,tree_algorithm,tmpdir,outdir,threads,bootstrapnum):
 		self.smallesttreesize = smallesttreesize
-		self.taxmap = taxmap
-		self.taxonomiclevel = taxonomiclevel
 		self.max_marker_overlap_range_for_tree = max_marker_overlap_range_for_tree
 		self.global_min_hmm_prevalence = global_min_hmm_prevalence
-		self.distances = distances
-		self.max_nodes_per_query = max_nodes_per_query
+		#self.max_nodes_per_query = max_nodes_per_query
 		self.query_markermatrix = query_markermatrix
-		self.ref_markermatrix = ref_markermatrix
 		self.min_marker_overlap_for_tree = min_marker_overlap_for_tree
-		self.min_marker_overlap_with_query = min_marker_overlap_with_query 
-		self.genbankannos = genbankannos 
-		self.genbankorfs = genbankorfs
 		self.queryorfs = queryorfs 
 		self.queryannos = queryannos
 		self.tree_algorithm = tree_algorithm
@@ -52,33 +44,7 @@ class treebuild:
 		os.system('mkdir -p %s'%self.tmpdir)
 		os.system('mkdir -p %s'%self.outdir)
 		print('<<<<<< STARTING TREE CONSTRUCTION >>>>>>>')
-
-	def find_potential_nodes(self):
-		print('	Loading references for treebuilding.')
-		# find taxa to load
-		groupstoload = []
-		for i in range(0,self.distances.shape[0]):
-			queryline = self.distances.iloc[i,:]
-			groupstoload.extend(queryline.nsmallest(n = self.max_nodes_per_query).index)
-		taxatoload = list(self.taxmap[self.taxmap['group'].isin([int(x) for x in groupstoload])].genbank_contigid)
-		self.refdb = import_full_db(taxatoload,self.ref_markermatrix)
-		#print(self.refdb)
-		#self.refdb = self.refdb[self.refdb.columns[self.refdb.sum()>=3]]
-		#self.query_markermatrix = self.query_markermatrix[self.query_markermatrix.columns[self.query_markermatrix.sum()>=3]]
-		#print(self.refdb)
-		#print(self.query_markermatrix)
-		print('	Finding potential nodes to include')
-		self.refdb = self.refdb.loc[:,self.query_markermatrix.columns]
-		self.distances_individual = pd.DataFrame(pairwise_distances(self.query_markermatrix,self.refdb,n_jobs = self.threads))
-		self.distances_individual.columns = self.refdb.index
-		self.distances_individual.index = self.query_markermatrix.index
-
-	def initialize_denovo_tree(self):
-		# get all pairwise distances for marker matrix
-		self.distances_individual = pd.DataFrame(pairwise_distances(self.query_markermatrix,self.query_markermatrix,n_jobs = self.threads))
-		self.distances_individual.columns = self.query_markermatrix.index
-		self.distances_individual.index = self.query_markermatrix.index
-
+		
 	def generate_treelist(self,info):
 		q = info[0]
 		querydist = info[1]
@@ -153,8 +119,6 @@ class treebuild:
 		merged = self.query_markermatrix
 		foo = [x + '_query' for x in list(merged.index)]
 		merged.index=foo
-		# remove hmms with too low a prevalence
-		#merged = self.filter_merged_matrix(merged)
 		merged = merged[merged.columns[merged.sum()>=self.global_min_hmm_prevalence]]
 		initialshape = merged.shape[0]
 		initialqueries = list(merged.index)
@@ -163,7 +127,7 @@ class treebuild:
 		finalqueries = list(merged.index)
 		dropped = list(set(initialqueries) - set(finalqueries))
 		print('	Dropping %s queries because they contained only HMMs below the global prevalence threshold (set with -x).'%(initialshape - finalshape))
-		with open('%s/failed_queries_global_hmm_threshold.txt'%self.outdir,'w') as w:
+		with open('%s/failed_queries1_hmmthreshold.txt'%self.outdir,'w') as w:
 			for line in dropped:
 				w.write(line+'\n')
 		print("	Building trees with a total of possible %s HMMs."%merged.shape[1])
@@ -182,23 +146,14 @@ class treebuild:
 				out = out[out.loc[:,'count']>self.smallesttreesize]
 				finaltrees = out.groupby('cluster').agg(pd.Series.tolist).contigid.tolist()
 			else:
-				print(1)
 				overlaps = merged.dot(merged.T)
-				print(2)
 				querydist = overlaps.loc[queries,:]
-				print(3)
 				querydist_rawnum = overlaps.loc[queries,:]
-				print(4)
 				querydist[querydist<=self.min_marker_overlap_for_tree]=0
 				querydist[querydist!=0]=1
-				#treelist = []
-				print(5)
 				pool = Pool(self.threads)                         
 				treelist = pool.map(self.generate_treelist, [[x,querydist,querydist_rawnum] for x in querydist.index]) 
 				pool.close()
-				print(6)
-				#for x in querydist.index:
-				#	treelist.append(self.generate_treelist([x,querydist,querydist_rawnum]))
 				treelist.sort()
 				treelist = list(treelist for treelist,_ in itertools.groupby(treelist))
 				treelist.reverse()
@@ -225,10 +180,8 @@ class treebuild:
 					treeoptions[1] = [len(list(set(queriesleft) & set(x))) for x in list(treeoptions[0])]
 					treeoptions = treeoptions[treeoptions[1]>0]
 					treelistsorted = treeoptions.sort_values([1,2],ascending=False)
-					#treelistsorted = treeoptions[treeoptions[4] < treeoptions[4].quantile(.25)].sort_values([1,2],ascending=False)
 					try:
 						t = list(treelistsorted[0])[0]
-						#### ADD A LINE THAT CHECKS FOR QUERIES ALREADY COVERED
 						indval = list(treelistsorted.loc[:,'indval'])[0]
 						if self.non_redundant_trees == True:
 							t = [x for x in t if x in queriesleft]
@@ -238,9 +191,9 @@ class treebuild:
 						done = list(set(t).intersection(set(queriesleft)))
 						queriesleft = set(queriesleft) - set(done)
 					except:
-						print('An additional %s queries are not going to placed on trees based on your provided parameters (e.g., they lack the requisite HMM overlaps). Going to write their IDs to a failed_trees.txt file in the output directory.'%len(queriesleft))
+						print('An additional %s queries are not going to placed on trees based on your provided parameters (e.g., they lack the requisite HMM overlaps to be placed on a tree). Going to write their IDs to a failed_trees.txt file in the output directory.'%len(queriesleft))
 						queriesleft = list(queriesleft)
-						with open('%s/failed_trees.txt'%self.outdir,'w') as w:
+						with open('%s/failed_queries2_unplaced.txt'%self.outdir,'w') as w:
 							for q in queriesleft:
 								w.write(q + '\n')
 						break
@@ -256,12 +209,6 @@ class treebuild:
 		self.full_hmm_matrix = merged
 		self.queries = queries
 		return(self.full_hmm_matrix)
-
-	def winnow(self,i):
-		query = self.distances_individual.iloc[i,:].name
-		queryseries = self.query_markermatrix.loc[query,:]
-		matches = queryseries.eq(self.refdb).sum(axis=1)
-		return(list(matches[matches>=self.min_marker_overlap_with_query].index))
 
 	def jaccard(self,list1,list2):
 		intersection = len(list(set(list1).intersection(list2)))
@@ -274,147 +221,17 @@ class treebuild:
 		intersection = len(list(set(list1).intersection(list2)))
 		union = (len(list1) + len(list2)) - intersection
 		return(1 - (float(intersection) / union))
-
-	def winnow_nodes_and_split_trees(self):
-		print('	Winnowing nodes based on hmm overlap using %s thread(s).'%self.threads)
-		# for each query, filter comparator nodes based on hmm overlap and find maximal set of reference contigs
-		self.refdb[self.refdb==0] = -1
-		pool = Pool(self.threads)    
-		tokeep = pool.map(self.winnow, range(0,self.distances_individual.shape[0]))
-		pool.close()
-		tokeep = [item for sublist in tokeep for item in sublist]
-		tokeep = list(set(tokeep))
-		refdb_sub  = self.refdb.loc[tokeep,:]
-		refdb_sub.to_csv('refcontigsallTEMP.csv')
-		self.referencecontigsall = tokeep
-		refdb_sub[refdb_sub == -1] = 0
-		foo = [x + '_reference' for x in list(refdb_sub.index)]
-		refdb_sub.index=foo
-		self.query_markermatrix
-		foo = [x + '_query' for x in list(self.query_markermatrix.index)]
-		queries=foo
-		self.query_markermatrix.index = foo
-		merged = pd.concat([refdb_sub,self.query_markermatrix])
-		merged.to_csv('TESTMERGED.csv')
-		merged = merged[merged.columns[merged.sum()>=self.global_min_hmm_prevalence]]
-		initialshape = merged.shape[0]
-		initialqueries = list(merged.index)
-		merged = merged[merged.sum(axis=1) > 0]
-		finalshape = merged.shape[0]
-		finalqueries = list(merged.index)
-		dropped = list(set(queries) - set(finalqueries))
-		print('	Dropping %s queries because they contained only HMMs below the global prevalence threshold (set with -x).'%(initialshape - finalshape))
-		with open('%s/failed_queries_global_hmm_threshold.txt'%self.outdir,'w') as w:
-			for line in dropped:
-				w.write(line+'\n')
-		if self.min_marker_overlap_for_tree>0:
-			if self.tree_splitting_mode=='hierarchical':
-				bar = linkage(self.query_markermatrix,method=self.linkagemethod)
-				a = self.query_markermatrix.index.tolist()
-				b = [x[0] for x in cluster.hierarchy.cut_tree(bar,height=np.quantile(bar,self.cutpoint)).tolist()]
-				c = pd.DataFrame.from_dict(Counter(b),orient='index')
-				out = pd.DataFrame({'contigid': a,'cluster':b})
-				out = pd.merge(out,c,right_index=True,left_on='cluster',how='left')
-				out.columns = ['contigid','cluster','count']
-				out = out[out.loc[:,'count']>self.smallesttreesize]
-				finaltrees = out.groupby('cluster').agg(pd.Series.tolist).contigid.tolist()
-			else:
-				overlaps = merged.dot(merged.T)
-				querydist = overlaps.loc[queries,:]
-				querydist_rawnum = overlaps.loc[queries,:]
-				querydist[querydist<=self.min_marker_overlap_for_tree]=0
-				querydist[querydist!=0]=1
-				#treelist = []
-				pool = Pool(self.threads)                         
-				treelist = pool.map(self.generate_treelist, [[x,querydist,querydist_rawnum] for x in querydist.index]) 
-				pool.close()
-				#for x in querydist.index:
-				#	print(x)
-				#	treelist.append(self.generate_treelist([x,querydist,querydist_rawnum]))
-				treelist.sort()
-				treelist = list(treelist for treelist,_ in itertools.groupby(treelist))
-				treelist.reverse()
-				print('	Identified %s potential trees, filtering them down.'%len(treelist))
-				queriesleft = list(set(queries))
-				finaltrees = []
-				alltrees = []	
-				treeoptions = pd.DataFrame([treelist,[len(list(set(x) & set(queriesleft))) for x in treelist],[len(x) for x in treelist],[(list(set(x) & set(queriesleft))) for x in treelist]]).T
-				treeoptions=treeoptions[treeoptions[2]>0]
-				treeoptions['indval'] = treeoptions.index
-				treelistsorted = treeoptions.sort_values([1,2],ascending=False)
-				seed = list(treelistsorted.loc[:,0])[0]
-				indval = list(treelistsorted['indval'])[0]
-				done = list(set(seed).intersection(set(queriesleft)))
-				queriesleft = set(queriesleft) - set(done)
-				finaltrees.append(seed)
-				alltrees.extend(seed)
-				treeoptions = treeoptions[treeoptions.loc[:,'indval']!=indval]
-				while True:
-					if treeoptions.shape[0] == 0:
-						break
-					if len(queriesleft) == 0:	
-						break
-					treeoptions[1] = [len(list(set(queriesleft) & set(x))) for x in list(treeoptions[0])]
-					treeoptions = treeoptions[treeoptions[1]>0]
-					treelistsorted = treeoptions.sort_values([1,2],ascending=False)
-					#treelistsorted = treeoptions[treeoptions[4] < treeoptions[4].quantile(.25)].sort_values([1,2],ascending=False)
-					try:
-						t = list(treelistsorted[0])[0]
-						#### ADD A LINE THAT CHECKS FOR QUERIES ALREADY COVERED
-						indval = list(treelistsorted.loc[:,'indval'])[0]
-						if self.non_redundant_trees == True:
-							t = [x for x in t if x in queriesleft]
-							if len(t) == 0:
-								treeoptions = treeoptions[treeoptions.loc[:,'indval']!=indval]
-								continue
-						done = list(set(t).intersection(set(queriesleft)))
-						queriesleft = set(queriesleft) - set(done)
-					except:
-						print('An additional %s queries are not going to placed on trees based on your provided parameters (e.g., they lack the requisite HMM overlaps). Going to write their IDs to a failed_trees.txt file in the output directory.'%len(queriesleft))
-						queriesleft = list(queriesleft)
-						with open('%s/failed_trees.txt'%self.outdir,'w') as w:
-							for q in queriesleft:
-								w.write(q + '\n')
-						break
-					if len(done)>0:
-						if len(t) == 0:
-							continue
-						finaltrees.append(t)
-						alltrees.extend(t)
-						treeoptions = treeoptions[treeoptions.loc[:,'indval']!=indval]
-			self.finaltrees = finaltrees
-		else:
-			self.finaltrees = [list(set(list(merged.index)))]
-		colvals = [x.replace("'",'_') for x in list(merged.columns)]
-		merged.columns = colvals
-		self.full_hmm_matrix = merged
-		self.queries = queries
-		return(self.full_hmm_matrix)
-
 	
 	def parallel_hmm_hunting(self,i):
 		t = self.finaltrees[i]
 		treeid = 'tree_'+str(i)
 		mergedsub = self.full_hmm_matrix.loc[t,:]
-		#mergedsub = self.filter_merged_matrix([mergedsub])
-#		finaltree = list(mergedsub.index)
-#		lost = set(t) - set(finaltree)
-#		with open('%s/%s_lost_queries_due_to_failing_within_tree_hmm_overlap.txt'%(self.outdir,treeid),'w') as w:
-#			for q in list(lost):
-#				w.write(q + '\n')
-#		if mergedsub.shape[0] == 0:
-#			print('Dropping all queries for trees %s -- try changing -k or -h or -x.'%i)
-#			return None
-#		if mergedsub.shape[1] == 0:
-#			print('No HMMs in tree %s -- try changing -h or -x.'%i)
-#			return None
 		mergedsub = mergedsub[mergedsub.sum().sort_values(ascending=False).index]
 		mergedsubtemp = mergedsub
 		contigcoverage = []
 		hmms_for_alignment=[]
 		contigcoverage.extend(list(set(list(mergedsub.index))))
 		while True:
-			print(mergedsub)
 			try:
 				i=mergedsub.columns[0]
 			except:
@@ -449,7 +266,6 @@ class treebuild:
 		self.alignmentcontigs = {}
 		treeout = []
 		for x in range(0,len(self.finaltrees)):
-			print(x)
 			treeout.append(self.parallel_hmm_hunting(x))
 		#pool = Pool(self.threads)  
 		#treeout = pool.map(self.parallel_hmm_hunting, range(0,len(self.finaltrees))) 
@@ -483,16 +299,16 @@ class treebuild:
 		allhmms = [x.replace("'","_") for x in allhmms]
 		genbankorfs_sub={}
 		print('	Loading sequence data in preparation for alignment.')
-		if self.treetype == 'placement':
-			# load genbank reference data based on HMMs
-			genbankorfs_loaded = SeqIO.to_dict(SeqIO.parse(str(self.genbankorfs), "fasta"))
-			genbankannos = pd.read_csv(str(self.genbankannos),header=None,index_col=0,sep='\t')
-			genbankannos['contigid'] = (genbankannos).index.str.rsplit('.', n=1).str[0] + '_reference'
-			genbankannos = genbankannos[genbankannos['contigid'].isin([x + '_reference' for x in self.referencecontigsall])]
-			genbankannos = genbankannos.drop_duplicates(['contigid',1])
-			hmmvals = [x.replace("'","_") for x in genbankannos.iloc[:,0]]
-			genbankannos.iloc[:,0] = hmmvals
-			genbankannos = genbankannos[genbankannos.iloc[:,0].isin(allhmms)]
+#		if self.treetype == 'placement':
+#			# load genbank reference data based on HMMs
+#			genbankorfs_loaded = SeqIO.to_dict(SeqIO.parse(str(self.genbankorfs), "fasta"))
+#			genbankannos = pd.read_csv(str(self.genbankannos),header=None,index_col=0,sep='\t')
+#			genbankannos['contigid'] = (genbankannos).index.str.rsplit('.', n=1).str[0] + '_reference'
+#			genbankannos = genbankannos[genbankannos['contigid'].isin([x + '_reference' for x in self.referencecontigsall])]
+#			genbankannos = genbankannos.drop_duplicates(['contigid',1])
+#			hmmvals = [x.replace("'","_") for x in genbankannos.iloc[:,0]]
+#			genbankannos.iloc[:,0] = hmmvals
+#			genbankannos = genbankannos[genbankannos.iloc[:,0].isin(allhmms)]
 		# load in and subset the query orfs 
 		queryorfs_loaded = SeqIO.to_dict(SeqIO.parse(str(self.queryorfs), "fasta"))
 		queryannos = pd.read_csv(str(self.queryannos),header=None,index_col=0,sep='\t')
@@ -515,9 +331,9 @@ class treebuild:
 			self.alignpaths.append(outdirhmm)
 			# get the genes with the domain
 			querygenes = list(set(list(queryannos[queryannos.iloc[:,0] == hmm].index)))
-			if self.treetype == 'placement':
-				refgenes = list(set(list(genbankannos[genbankannos.iloc[:,0] == hmm].index)))
-				print(refgenes)
+	#		if self.treetype == 'placement':
+	#			refgenes = list(set(list(genbankannos[genbankannos.iloc[:,0] == hmm].index)))
+	#			print(refgenes)
 			with open(outdirhmm,'w') as w:
 				for q in querygenes:
 					seqidq = '>' + q
@@ -525,20 +341,13 @@ class treebuild:
 					w.write('.'.join(seqidq.split('.')[:-1]) + '_query' + '\n')
 					w.write(str(seqq) + '\n')
 					temp.append('.'.join(seqidq.split('.')[:-1])+ '_query')
-				if self.treetype == 'placement':
-					for r in refgenes:
-						seqidr = '>' + r
-						seqr = genbankorfs_loaded[r].seq
-						w.write('.'.join(seqidr.split('.')[:-1])+ '_reference' + '\n')
-						w.write(str(seqr) + '\n')
-						temp.append('.'.join(seqidr.split('.')[:-1])+ '_reference')
-		#	hmmcontig[hmm] = temp
-		#self.alignmentcontigs = {}
-		#for t in trees:
-		#	hmms = self.hmms_to_align[t]
-		#	contigs = [hmmcontig[x] for x in hmms]
-		#	contigs = list(set([item for sublist in contigs for item in sublist]))
-		#	self.alignmentcontigs[t] = contigs
+		#		if self.treetype == 'placement':
+		#			for r in refgenes:
+		#				seqidr = '>' + r
+		#				seqr = genbankorfs_loaded[r].seq
+		#				w.write('.'.join(seqidr.split('.')[:-1])+ '_reference' + '\n')
+		#				w.write(str(seqr) + '\n')
+		#				temp.append('.'.join(seqidr.split('.')[:-1])+ '_reference')
 		print('	All genes have been written to file and we are ready to run alignments.')
 		return([trees,self.alignmentcontigs])
 
@@ -592,14 +401,12 @@ class treebuild:
 			files = os.listdir('%s/alignments'%(self.tmpdir))
 			files = [self.tmpdir + '/alignments/' + x for x in files if '.aligned.trimmed' in x]
 		msas = {}
-		print(files)
 		for f in files:
 			hmm = f.split('/')[-1].replace('.fa.aligned.trimmed','')
 			hmm = hmm.replace("'","_")
 			msa = SeqIO.to_dict(SeqIO.parse(str(f), "fasta"))
 			msalen = len(msa[list(msa.keys())[0]])
 			msas[hmm] = [msa,msalen]
-		print(msas[hmm])
 		for t in self.alignmentcontigs.keys(): 
 			aligndir = self.tmpdir + '/' + t
 			os.system('mkdir -p %s'%aligndir)
@@ -608,7 +415,6 @@ class treebuild:
 				for c in contigs:
 					alignment = ''
 					hmms_contig = self.hmms_to_align[t]
-					print(hmms_contig)
 					for val in hmms_contig:
 						val = val.replace("'","_")
 						m = msas[val]
@@ -635,14 +441,15 @@ class treebuild:
 				treeslurm.append([t,self.tree_algorithm,fullalignment,treepath])
 			if not self.batch:
 				print('		%s'%t)
-				treepath = self.outdir + '/' + t + '/' + t
+				treepath = self.outdir + '/' + t 
 				os.system('mkdir -p %s'%(self.outdir + '/' + t + '/'))
 				if self.tree_algorithm == 'iqtree':
 					os.system("iqtree -s %s --prefix %s -m MFP --seqtype AA -T %s 2>> %s/treelog"%(fullalignment,treepath,self.threads,self.tmpdir))
 					treefiles.append([treepath + '.iqtree','iqtree'])
 				if self.tree_algorithm == 'fasttree':
 					os.system("export OMP_NUM_THREADS=%s"%self.threads)
-					os.system("fasttree %s > %s/fasttree.tree"%(fullalignment,treepath,self.tmpdir))
+					print(treepath)
+					os.system("fasttree %s > %s/fasttree.tree"%(fullalignment,treepath))
 					treefiles.append([treepath + 'fasttree.tree','fasttree'])
 				#if self.tree_algorithm == 'RAxML':
 				#	os.system("")
